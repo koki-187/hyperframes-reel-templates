@@ -1,0 +1,13 @@
+import express from 'express';
+import path from 'node:path';
+import {fileURLToPath} from 'node:url';
+import {createRecipe,MOTION,FORMATS} from './engine.mjs';
+const __dirname=path.dirname(fileURLToPath(import.meta.url));
+const app=express();app.use(express.json({limit:'2mb'}));
+app.get('/api/health',(_,res)=>res.json({ok:true,version:'3.0.0'}));
+app.get('/api/catalog',(_,res)=>res.json({motion:MOTION,formats:FORMATS}));
+app.post('/api/recipe',(req,res)=>{try{res.json(createRecipe(req.body||{}))}catch(e){res.status(400).json({error:e.message})}});
+app.post('/api/generate',async(req,res)=>{const recipe=createRecipe(req.body||{});const provider=req.body?.provider||'prompt_only';if(provider==='prompt_only')return res.json({status:'brief_ready',provider,recipe});if(provider==='custom_webhook'&&process.env.SDS_WEBHOOK_URL){const r=await fetch(process.env.SDS_WEBHOOK_URL,{method:'POST',headers:{'content-type':'application/json',...(process.env.SDS_WEBHOOK_TOKEN?{'authorization':`Bearer ${process.env.SDS_WEBHOOK_TOKEN}`}:{})},body:JSON.stringify(recipe)});return res.status(r.status).send(await r.text())}return res.status(501).json({status:'adapter_not_configured',provider,required:'Configure a provider adapter or use prompt_only/custom_webhook',recipe})});
+app.use(express.static(path.join(__dirname,'app')));
+app.get('*',(_,res)=>res.sendFile(path.join(__dirname,'app','index.html')));
+const port=Number(process.env.PORT||4314);app.listen(port,'127.0.0.1',()=>console.log(`MAW HYPERFRAME http://127.0.0.1:${port}`));
