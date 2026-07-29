@@ -4,6 +4,7 @@ on:
   pull_request:
   push:
     branches:
+      - main
       - feature/super-design-system-v3
 
 permissions:
@@ -24,7 +25,7 @@ jobs:
           python -m json.tool super-design-system-v3/package.json > /dev/null
           python -m json.tool super-design-system-v3/workflows/comfyui/flux1-schnell.json > /dev/null
           python -m json.tool super-design-system-v3/workflows/comfyui/ltx-image-to-video.json > /dev/null
-      - name: Check required mobile and engine files
+      - name: Check required mobile, engine and quality files
         run: |
           test -f apps/mobile-pwa/index.html
           test -f apps/mobile-pwa/advanced.html
@@ -40,6 +41,11 @@ jobs:
           test -f super-design-system-v3/video/video-qa.mjs
           test -f super-design-system-v3/adapters/comfyui.mjs
           test -f super-design-system-v3/adapters/ltx-video.mjs
+          test -f super-design-system-v3/quality/asset-qa.mjs
+          test -f super-design-system-v3/quality/quality-gate.mjs
+          test -f super-design-system-v3/tests/asset-qa-test.mjs
+          test -f super-design-system-v3/tests/quality-gate-test.mjs
+          test -f super-design-system-v3/docs/QUALITY_STANDARD.md
           test -f super-design-system-v3/desktop/START_14DNA_TAILSCALE.command
           test -f super-design-system-v3/desktop/START_14DNA_TAILSCALE.ps1
       - name: Prevent committed font binaries
@@ -57,8 +63,9 @@ jobs:
       - name: Install engine dependencies
         working-directory: super-design-system-v3
         run: npm install
-      - name: Run engine and media tests
+      - name: Run engine, media and premium quality tests
         working-directory: super-design-system-v3
         env:
           DNA_ALLOW_FONT_FALLBACK: 'true'
+          DNA_REQUIRE_PREMIUM_GATE: 'true'
         run: npm test
