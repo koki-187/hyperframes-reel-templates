@@ -1,12 +1,13 @@
 {
-  "name": "maw-hyperframe",
-  "version": "3.0.0",
+  "name": "14dna-engine",
+  "version": "4.1.0",
   "private": true,
   "type": "module",
   "scripts": {
     "start": "node server.mjs",
     "mcp": "node mcp-server/index.mjs",
-    "test": "node tests/self-test.mjs"
+    "test": "node tests/self-test.mjs && node tests/v4-test.mjs",
+    "fonts:check": "node -e \"import('./font-manager.mjs').then(async m=>{const r=await m.inspectFonts('./private-fonts');console.log(JSON.stringify(r,null,2));if(r.status!=='ready')process.exit(1)})\""
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.17.0",
