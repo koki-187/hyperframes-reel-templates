@@ -18,7 +18,8 @@
   "shortcuts": [
     {"name": "X投稿を作成", "short_name": "X", "url": "./?format=x"},
     {"name": "Reelsを作成", "short_name": "Reels", "url": "./?format=reels"},
-    {"name": "Storyを作成", "short_name": "Story", "url": "./?format=story"}
+    {"name": "Storyを作成", "short_name": "Story", "url": "./?format=story"},
+    {"name": "動画・ローカルAI", "short_name": "高度生成", "url": "./advanced.html"}
   ],
   "share_target": {
     "action": "./?shared=1",
