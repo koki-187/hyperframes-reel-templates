@@ -27,16 +27,21 @@ jobs:
       - name: Check required mobile and engine files
         run: |
           test -f apps/mobile-pwa/index.html
+          test -f apps/mobile-pwa/advanced.html
           test -f apps/mobile-pwa/sw.js
           test -f apps/mobile-pwa/offline.html
           test -f docs/IMPLEMENTATION_ROADMAP.md
           test -f super-design-system-v3/renderers/social-svg.mjs
+          test -f super-design-system-v3/renderers/social-png.mjs
           test -f super-design-system-v3/japanese-typesetting.mjs
           test -f super-design-system-v3/font-manager.mjs
           test -f super-design-system-v3/video/render-video.mjs
           test -f super-design-system-v3/video/ffmpeg.mjs
+          test -f super-design-system-v3/video/video-qa.mjs
           test -f super-design-system-v3/adapters/comfyui.mjs
           test -f super-design-system-v3/adapters/ltx-video.mjs
+          test -f super-design-system-v3/desktop/START_14DNA_TAILSCALE.command
+          test -f super-design-system-v3/desktop/START_14DNA_TAILSCALE.ps1
       - name: Prevent committed font binaries
         run: |
           if find . -type f \( -iname '*.ttf' -o -iname '*.otf' -o -iname '*.woff' -o -iname '*.woff2' \) | grep -q .; then
