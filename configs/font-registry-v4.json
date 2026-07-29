@@ -1,0 +1,57 @@
+{
+  "version": "4.0.0",
+  "distributionPolicy": {
+    "bundleFontBinaries": false,
+    "publicRepository": false,
+    "requireLicenseFile": true,
+    "requireChecksum": true,
+    "blockFinalExportWhenMissing": true
+  },
+  "fallbackStack": "system-ui, -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Yu Gothic', sans-serif",
+  "families": [
+    {
+      "id": "noto-sans-jp",
+      "name": "Noto Sans JP",
+      "roles": ["ui", "body", "caption", "subtitle", "data"],
+      "weights": [400, 500, 700, 900],
+      "license": "SIL Open Font License 1.1",
+      "requiredForFinalRender": true
+    },
+    {
+      "id": "noto-serif-jp",
+      "name": "Noto Serif JP",
+      "roles": ["editorial", "premium", "thought-leadership"],
+      "weights": [400, 600, 700, 900],
+      "license": "SIL Open Font License 1.1"
+    },
+    {
+      "id": "zen-kaku-gothic-new",
+      "name": "Zen Kaku Gothic New",
+      "roles": ["technology", "geometric", "minimal"],
+      "weights": [400, 500, 700, 900],
+      "license": "SIL Open Font License 1.1"
+    },
+    {
+      "id": "shippori-mincho",
+      "name": "Shippori Mincho",
+      "roles": ["heritage", "japanese-editorial"],
+      "weights": [400, 600, 700, 800],
+      "license": "SIL Open Font License 1.1"
+    },
+    {
+      "id": "ibm-plex-sans-jp",
+      "name": "IBM Plex Sans JP",
+      "roles": ["corporate", "dashboard", "technical"],
+      "weights": [400, 500, 600, 700],
+      "license": "SIL Open Font License 1.1"
+    }
+  ],
+  "renderRules": {
+    "preview": "Load only the selected DNA font; use WOFF2 when available.",
+    "image": "Rasterize text with verified local font files.",
+    "video": "Preload font files before Remotion or FFmpeg rendering.",
+    "missingFont": "FONT_SETUP_REQUIRED",
+    "missingLicense": "FONT_LICENSE_REQUIRED",
+    "missingGlyph": "FONT_GLYPH_REQUIRED"
+  }
+}

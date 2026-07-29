@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#07090d">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="./manifest.webmanifest">
+<title>14DNA-ENGINE</title>
+<style>
+:root{--bg:#07090d;--panel:#11151c;--line:#29313d;--text:#f2f4f6;--muted:#9ba4af;--accent:#b8ff2c;--danger:#ff6b6b;--bottom:env(safe-area-inset-bottom)}
+*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Hiragino Sans","Yu Gothic",sans-serif}body{min-height:100dvh;padding-bottom:calc(76px + var(--bottom))}
+header{position:sticky;top:0;z-index:10;padding:calc(18px + env(safe-area-inset-top)) 18px 16px;background:#07090de8;border-bottom:1px solid var(--line);backdrop-filter:blur(16px)}
+.brand{font-size:22px;font-weight:900;letter-spacing:-.04em}.tag{font-size:12px;color:var(--muted)}main{width:min(100% - 28px,720px);margin:auto;padding:18px 0 30px}
+h1{font-size:clamp(38px,11vw,62px);line-height:.94;letter-spacing:-.06em;margin:18px 0 12px}.lead{color:var(--muted);line-height:1.65}
+.quick{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:20px 0}.quick button,.card,input,textarea,select{border:1px solid var(--line);background:var(--panel);color:var(--text);border-radius:15px}.quick button{min-height:76px;text-align:left;padding:14px;font-size:15px;font-weight:800}
+.card{padding:16px;margin:16px 0}label{display:block;font-size:12px;color:var(--muted);margin:14px 0 7px}input,textarea,select{width:100%;min-height:50px;padding:13px 14px;font-size:16px}textarea{min-height:108px;resize:vertical}
+.dna-strip{display:flex;gap:10px;overflow:auto;scroll-snap-type:x mandatory;padding-bottom:8px}.dna{min-width:78%;scroll-snap-align:center}.dna strong{display:block;font-size:19px;margin-bottom:8px}.dna.selected{outline:2px solid var(--accent)}
+.primary,.secondary,.danger{width:100%;min-height:54px;border-radius:14px;font-size:16px;font-weight:900;margin-top:12px}.primary{border:0;background:var(--accent);color:#071000}.secondary{border:1px solid var(--line);background:transparent;color:var(--text)}.danger{border:1px solid #ff6b6b55;background:#ff6b6b15;color:var(--danger)}
+.status{display:flex;align-items:center;justify-content:space-between;gap:12px}.pill{font-size:11px;color:var(--accent);background:#b8ff2c1c;border-radius:999px;padding:5px 9px}.pill.error{color:var(--danger);background:#ff6b6b1c}.progress{height:8px;background:#242b35;border-radius:999px;overflow:hidden;margin:14px 0}.progress>span{display:block;height:100%;width:0;background:var(--accent);transition:width .25s}.file-list{display:grid;gap:10px}.file{display:flex;align-items:center;justify-content:space-between;gap:12px;border:1px solid var(--line);border-radius:12px;padding:12px}.file button{min-height:44px;border:0;border-radius:10px;padding:0 14px;background:var(--accent);font-weight:800}
+nav{position:fixed;left:0;right:0;bottom:0;z-index:20;height:calc(68px + var(--bottom));padding-bottom:var(--bottom);display:grid;grid-template-columns:repeat(5,1fr);background:#0a0d12ef;border-top:1px solid var(--line);backdrop-filter:blur(18px)}nav button{border:0;background:transparent;color:var(--muted);font-size:11px;min-width:48px}nav button.active{color:var(--accent)}
+#install{display:none}.notice{font-size:12px;line-height:1.6;color:var(--muted)}.hidden{display:none!important}.view{display:none}.view.active{display:block}.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;word-break:break-all}@media(min-width:700px){.quick{grid-template-columns:repeat(4,1fr)}}
+</style>
+</head>
+<body>
+<header><div class="brand">14DNA-ENGINE</div><div class="tag">14の美学を、一つのエンジンへ。</div></header>
+<main>
+<section id="view-create" class="view active">
+<h1>SNS制作を<br>スマホで完結。</h1>
+<p class="lead">企画、14DNA選択、生成、比較、保存、共有まで。高解像度処理は無料のローカルRender Nodeへ送ります。</p>
+<button id="install" class="secondary">ホーム画面へ追加</button>
+<div class="quick">
+<button data-preset="x_landscape">X<br><span class="tag">1920×1080</span></button>
+<button data-preset="reels">Reels<br><span class="tag">1080×1920</span></button>
+<button data-preset="story">Story<br><span class="tag">1080×1920</span></button>
+<button data-preset="square">正方形<br><span class="tag">1080×1080</span></button>
+</div>
+<section class="card">
+<div class="status"><strong>新規作成</strong><span class="pill">自動保存</span></div>
+<label for="theme">テーマ</label><textarea id="theme" placeholder="例：AIで不動産調査の時間を短縮"></textarea>
+<label for="headline">見出し</label><input id="headline" maxlength="80" placeholder="SNS画像に表示する見出し">
+<label for="subtitle">補足</label><input id="subtitle" maxlength="120" placeholder="短い説明やCTA">
+<label for="preset">SNS形式</label><select id="preset"><option value="x_landscape">X横 1920×1080</option><option value="x_vertical">X縦 1080×1920</option><option value="reels">Reels 1080×1920</option><option value="story">Story 1080×1920</option><option value="square">正方形 1080×1080</option></select>
+<label for="mode">無料生成モード</label><select id="mode"><option value="template_png">PNG画像</option><option value="template_svg">SVG画像</option><option value="prompt_only">Recipeのみ</option></select>
+<label>14DNA</label>
+<div class="dna-strip">
+<div class="card dna selected" tabindex="0" data-dna="digital_nature"><strong>04 DIGITAL NATURE</strong><span class="tag">AI・分析・不動産テック</span></div>
+<div class="card dna" tabindex="0" data-dna="swiss_grid"><strong>08 SWISS GRID</strong><span class="tag">統計・比較・B2B</span></div>
+<div class="card dna" tabindex="0" data-dna="urban_typographic_energy"><strong>10 TYPOGRAPHIC ENERGY</strong><span class="tag">主張・Q&A・問題提起</span></div>
+</div>
+<label for="media">写真・動画素材</label><input id="media" type="file" accept="image/*,video/*" multiple>
+<button id="generate" class="primary">無料で生成</button>
+<p id="create-message" class="notice">APIキー不要のテンプレート生成を標準にしています。</p>
+</section>
+</section>
+
+<section id="view-status" class="view">
+<h1>生成状況</h1>
+<section class="card">
+<div class="status"><strong id="job-title">ジョブなし</strong><span id="job-pill" class="pill">待機</span></div>
+<div class="progress"><span id="progress-bar"></span></div>
+<p id="job-detail" class="notice">作成画面から生成を開始してください。</p>
+<button id="cancel-job" class="danger hidden">生成を取消</button>
+<div id="outputs" class="file-list"></div>
+</section>
+</section>
+
+<section id="view-history" class="view">
+<h1>履歴</h1><section id="history-list" class="card"><p class="notice">生成履歴はこの端末へ保存されます。</p></section>
+</section>
+
+<section id="view-settings" class="view">
+<h1>接続設定</h1>
+<section class="card">
+<label for="render-url">Render Node URL</label><input id="render-url" inputmode="url" placeholder="https://PC名.tailnet.ts.net">
+<label for="render-token">端末トークン</label><input id="render-token" type="password" autocomplete="off" placeholder="PC側のDNA_RENDER_TOKEN">
+<p class="notice">GitHub PagesはHTTPSのため、スマホからPCへ接続する場合はTailscale HTTPSなどの安全なURLを使用します。トークンはこの端末内だけに保存します。</p>
+<button id="test-connection" class="secondary">接続テスト</button>
+<p id="connection-result" class="notice"></p>
+</section>
+</section>
+
+<section id="view-dna" class="view"><h1>14DNA</h1><section class="card"><p class="lead">Image DNA・Motion DNA・Color DNAを同一Seedで連動させます。詳細カタログはRender Node接続後に取得します。</p></section></section>
+</main>
+<nav><button data-view="create" class="active">作成</button><button data-view="dna">DNA</button><button data-view="history">履歴</button><button data-view="status">状況</button><button data-view="settings">設定</button></nav>
+<script>
+const draftKey='14dna-draft-v4',settingsKey='14dna-settings-v4',historyKey='14dna-history-v4';
+let installPrompt=null,currentJobId=null,pollTimer=null,selectedDna='digital_nature';
+const $=id=>document.getElementById(id);
+const fields=['theme','headline','subtitle','preset','mode'];
+function loadJson(key,fallback){try{return JSON.parse(localStorage.getItem(key)||'')||fallback}catch{return fallback}}
+function saveDraft(){const state=Object.fromEntries(fields.map(id=>[id,$(id).value]));state.dna=selectedDna;localStorage.setItem(draftKey,JSON.stringify(state))}
+function restore(){const d=loadJson(draftKey,{});fields.forEach(id=>{if(d[id])$(id).value=d[id]});if(d.dna)selectDna(d.dna);const s=loadJson(settingsKey,{});$('render-url').value=s.url||'';$('render-token').value=s.token||'';renderHistory()}
+function settings(){return{url:$('render-url').value.trim().replace(/\/$/,''),token:$('render-token').value.trim()}}
+function headers(){const s=settings();return{'content-type':'application/json',...(s.token?{authorization:`Bearer ${s.token}`}:{}) ,'x-device-id':deviceId()}}
+function deviceId(){let id=localStorage.getItem('14dna-device-id');if(!id){id=crypto.randomUUID();localStorage.setItem('14dna-device-id',id)}return id}
+function selectDna(id){selectedDna=id;document.querySelectorAll('.dna').forEach(el=>el.classList.toggle('selected',el.dataset.dna===id));saveDraft()}
+function showView(name){document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id===`view-${name}`));document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('active',b.dataset.view===name))}
+function setJobState(job){currentJobId=job.id;$('job-title').textContent=`Job ${job.id.slice(0,8)}`;$('job-pill').textContent=job.status;$('job-pill').classList.toggle('error',job.status==='failed');const pct={queued:15,processing:60,completed:100,failed:100,cancelled:100}[job.status]||0;$('progress-bar').style.width=`${pct}%`;$('job-detail').textContent=job.error||`${job.mode} / ${job.recipe?.format||job.input?.format||''}`;$('cancel-job').classList.toggle('hidden',!['queued','processing'].includes(job.status));renderOutputs(job);if(['completed','failed','cancelled'].includes(job.status)){clearInterval(pollTimer);pollTimer=null;saveHistory(job)}}
+function renderOutputs(job){const root=$('outputs');root.innerHTML='';for(const file of job.result?.files||[]){const row=document.createElement('div');row.className='file';row.innerHTML=`<span><strong>${file.name}</strong><br><span class="tag">${file.type}</span></span>`;const button=document.createElement('button');button.textContent='保存';button.onclick=()=>downloadOutput(file);row.append(button);root.append(row)}}
+async function request(path,options={}){const s=settings();if(!s.url)throw new Error('Render Node URLを設定してください');const response=await fetch(`${s.url}${path}`,{...options,headers:{...headers(),...(options.headers||{})}});const text=await response.text();let data;try{data=JSON.parse(text)}catch{data={raw:text}}if(!response.ok)throw new Error(data.error||`HTTP ${response.status}`);return data}
+async function createJob(){try{$('generate').disabled=true;$('create-message').textContent='生成ジョブを送信しています…';const input={theme:$('theme').value.trim(),headline:$('headline').value.trim(),subtitle:$('subtitle').value.trim(),format:$('preset').value,mode:$('mode').value,outputFormat:$('mode').value==='template_png'?'png':'svg',motionId:selectedDna,seed:`mobile-${Date.now()}`};if(!input.theme&&!input.headline)throw new Error('テーマまたは見出しを入力してください');const job=await request('/api/jobs',{method:'POST',body:JSON.stringify(input)});setJobState(job);showView('status');pollTimer=setInterval(pollJob,1000)}catch(e){$('create-message').textContent=e.message}finally{$('generate').disabled=false}}
+async function pollJob(){if(!currentJobId)return;try{setJobState(await request(`/api/jobs/${currentJobId}`))}catch(e){$('job-detail').textContent=e.message}}
+async function cancelJob(){if(!currentJobId)return;try{setJobState(await request(`/api/jobs/${currentJobId}`,{method:'DELETE'}))}catch(e){$('job-detail').textContent=e.message}}
+async function downloadOutput(file){try{const s=settings();const response=await fetch(`${s.url}${file.url}`,{headers:headers()});if(!response.ok)throw new Error(`保存失敗 HTTP ${response.status}`);const blob=await response.blob();const exported=new File([blob],file.name,{type:file.type});if(navigator.canShare?.({files:[exported]})){await navigator.share({files:[exported],title:'14DNA-ENGINE'})}else{const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=file.name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),5000)}}catch(e){$('job-detail').textContent=e.message}}
+function saveHistory(job){const h=loadJson(historyKey,[]).filter(x=>x.id!==job.id);h.unshift({id:job.id,status:job.status,createdAt:job.createdAt,headline:job.input?.headline||job.input?.theme||'',files:job.result?.files||[]});localStorage.setItem(historyKey,JSON.stringify(h.slice(0,30)));renderHistory()}
+function renderHistory(){const h=loadJson(historyKey,[]),root=$('history-list');root.innerHTML=h.length?'':'<p class="notice">生成履歴はまだありません。</p>';for(const item of h){const div=document.createElement('div');div.className='file';div.innerHTML=`<span><strong>${item.headline||'名称未設定'}</strong><br><span class="tag">${new Date(item.createdAt).toLocaleString('ja-JP')} / ${item.status}</span></span>`;root.append(div)}}
+async function testConnection(){const s=settings();localStorage.setItem(settingsKey,JSON.stringify(s));try{const health=await fetch(`${s.url}/api/health`).then(r=>r.json());$('connection-result').textContent=`接続成功：${health.name} v${health.version} / 無料モード ${health.freeMode?'ON':'OFF'}`}catch(e){$('connection-result').textContent=`接続失敗：${e.message}`}}
+fields.forEach(id=>$(id).addEventListener('input',saveDraft));document.querySelectorAll('.dna').forEach(el=>{el.addEventListener('click',()=>selectDna(el.dataset.dna));el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' ')selectDna(el.dataset.dna)})});document.querySelectorAll('[data-preset]').forEach(b=>b.addEventListener('click',()=>{$('preset').value=b.dataset.preset;saveDraft()}));document.querySelectorAll('nav button').forEach(b=>b.addEventListener('click',()=>showView(b.dataset.view)));
+$('generate').addEventListener('click',createJob);$('cancel-job').addEventListener('click',cancelJob);$('test-connection').addEventListener('click',testConnection);$('render-url').addEventListener('change',()=>localStorage.setItem(settingsKey,JSON.stringify(settings())));$('render-token').addEventListener('change',()=>localStorage.setItem(settingsKey,JSON.stringify(settings())));
+window.addEventListener('beforeinstallprompt',event=>{event.preventDefault();installPrompt=event;$('install').style.display='block'});$('install').addEventListener('click',async()=>{if(!installPrompt)return;await installPrompt.prompt();installPrompt=null});if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw.js');restore();
+</script>
+</body></html>

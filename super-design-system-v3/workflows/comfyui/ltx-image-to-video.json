@@ -1,0 +1,7 @@
+{
+  "1": {"class_type": "LoadImage", "inputs": {"image": "{{image_path}}"}},
+  "2": {"class_type": "LTXVLoader", "inputs": {"model_name": "{{ltx_model}}"}},
+  "3": {"class_type": "CLIPTextEncode", "inputs": {"text": "{{prompt}}", "clip": ["2", 1]}},
+  "4": {"class_type": "LTXVImgToVideo", "inputs": {"model": ["2", 0], "positive": ["3", 0], "image": ["1", 0], "width": "{{width}}", "height": "{{height}}", "num_frames": "{{frames}}", "seed": "{{seed}}"}},
+  "5": {"class_type": "VHS_VideoCombine", "inputs": {"images": ["4", 0], "frame_rate": "{{fps}}", "loop_count": 0, "filename_prefix": "14DNA-LTX", "format": "video/h264-mp4", "pingpong": false, "save_output": true}}
+}
