@@ -15,9 +15,9 @@ export async function renderSocialPng({recipe,input={},font,output}){
  const subtitleMarkup=`<span foreground="${xml(text)}" alpha="72%" weight="500">${xml(input.subtitle||input.theme||'14の美学を、一つのエンジンへ。')}</span>`;
  const metaMarkup=`<span foreground="${xml(accent)}" letter_spacing="1600">14DNA / ${xml(recipe.motion?.id||'AUTO')} / ${xml(recipe.seed||'AUTO')}</span>`;
  const composites=[
-  {input:{text:{text:titleMarkup,fontfile:font.file,width:titleWidth,height:Math.round(height*.42),align:'left',rgba:true,dpi:Math.max(72,titleSize*.72)}},left:margin,top:Math.round(height*.26)},
-  {input:{text:{text:subtitleMarkup,fontfile:font.file,width:Math.round(width*.78),height:Math.round(height*.1),align:'left',rgba:true,dpi:Math.max(48,width*.022)}},left:margin,top:Math.round(height*.74)},
-  {input:{text:{text:metaMarkup,fontfile:font.file,width:Math.round(width*.8),height:Math.round(height*.06),align:'left',rgba:true,dpi:Math.max(36,width*.014)}},left:margin,top:Math.round(height*.88)}
+  {input:{text:{text:titleMarkup,fontfile:font.file,width:titleWidth,align:'left',rgba:true,dpi:Math.max(72,titleSize*.72)}},left:margin,top:Math.round(height*.26)},
+  {input:{text:{text:subtitleMarkup,fontfile:font.file,width:Math.round(width*.78),align:'left',rgba:true,dpi:Math.max(48,width*.022)}},left:margin,top:Math.round(height*.74)},
+  {input:{text:{text:metaMarkup,fontfile:font.file,width:Math.round(width*.8),align:'left',rgba:true,dpi:Math.max(36,width*.014)}},left:margin,top:Math.round(height*.88)}
  ];
  await sharp(Buffer.from(base)).composite(composites).png({compressionLevel:9,adaptiveFiltering:true}).toFile(output);
  return{output,width,height,font:{name:font.name,sha256:font.sha256},layout};
