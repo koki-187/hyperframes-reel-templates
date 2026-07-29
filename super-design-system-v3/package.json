@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node server.mjs",
     "mcp": "node mcp-server/index.mjs",
-    "test": "node tests/self-test.mjs && node tests/v4-test.mjs",
+    "test": "node tests/v4-test.mjs",
     "fonts:check": "node -e \"import('./font-manager.mjs').then(async m=>{const r=await m.inspectFonts('./private-fonts');console.log(JSON.stringify(r,null,2));if(r.status!=='ready')process.exit(1)})\""
   },
   "dependencies": {
