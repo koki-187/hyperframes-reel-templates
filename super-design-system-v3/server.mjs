@@ -2,6 +2,7 @@ import express from 'express';
 import path from 'node:path';
 import fs from 'node:fs/promises';
 import crypto from 'node:crypto';
+import sharp from 'sharp';
 import {fileURLToPath} from 'node:url';
 import {createRecipe,MOTION,FORMATS} from './engine.mjs';
 import {renderSocialSvg} from './renderers/social-svg.mjs';
@@ -50,21 +51,33 @@ async function executeJob(job){
   try{
     if(job.mode==='prompt_only'){
       job.result={recipe:job.recipe};
-    }else if(job.mode==='template_svg'){
+    }else if(job.mode==='template_svg'||job.mode==='template_png'){
       const svg=renderSocialSvg(job.recipe,job.input);
-      const file=`${job.id}.svg`;
-      await fs.writeFile(path.join(outputDir,file),svg);
-      job.result={files:[{name:file,type:'image/svg+xml',url:`/api/outputs/${file}`}]};
+      const svgFile=`${job.id}.svg`;
+      await fs.writeFile(path.join(outputDir,svgFile),svg);
+      const files=[{name:svgFile,type:'image/svg+xml',url:`/api/outputs/${svgFile}`}];
+      if(job.mode==='template_png'||job.input?.outputFormat==='png'){
+        const pngFile=`${job.id}.png`;
+        await sharp(Buffer.from(svg)).png({compressionLevel:9,adaptiveFiltering:true}).toFile(path.join(outputDir,pngFile));
+        files.unshift({name:pngFile,type:'image/png',url:`/api/outputs/${pngFile}`});
+      }
+      job.result={files};
     }else{
       throw new Error(`ADAPTER_NOT_CONFIGURED:${job.mode}`);
     }
-    job.status='completed'; job.completedAt=new Date().toISOString();
-  }catch(error){job.status='failed';job.error=String(error?.message||error);job.completedAt=new Date().toISOString();}
+    if(job.status!=='cancelled'){
+      job.status='completed'; job.completedAt=new Date().toISOString();
+    }
+  }catch(error){
+    if(job.status!=='cancelled'){
+      job.status='failed';job.error=String(error?.message||error);job.completedAt=new Date().toISOString();
+    }
+  }
   await writeJob(job);
 }
 
-app.get('/api/health',(_,res)=>res.json({ok:true,name:'14DNA-ENGINE',version:'4.1.0',freeMode:true}));
-app.get('/api/catalog',(_,res)=>res.json({motion:MOTION,formats:FORMATS,modes:['prompt_only','template_svg']}));
+app.get('/api/health',(_,res)=>res.json({ok:true,name:'14DNA-ENGINE',version:'4.2.0',freeMode:true,modes:['prompt_only','template_svg','template_png']}));
+app.get('/api/catalog',(_,res)=>res.json({motion:MOTION,formats:FORMATS,modes:['prompt_only','template_svg','template_png']}));
 app.get('/api/fonts',requireToken,async(_,res)=>res.json(await inspectFonts(path.join(__dirname,'private-fonts'))));
 app.post('/api/recipe',(req,res)=>{try{res.json(createRecipe(req.body||{}))}catch(e){res.status(400).json({error:e.message})}});
 
@@ -86,8 +99,10 @@ app.get('/api/outputs/:file',requireToken,(req,res)=>{
 });
 
 app.post('/api/generate',requireToken,async(req,res)=>{
-  const input={...(req.body||{}),mode:req.body?.provider==='prompt_only'?'prompt_only':'template_svg'};
-  const recipe=createRecipe(input);const job={id:crypto.randomUUID(),status:'queued',mode:input.mode,input,recipe,createdAt:new Date().toISOString()};
+  const requested=req.body?.provider||req.body?.mode||'prompt_only';
+  const mode=['prompt_only','template_svg','template_png'].includes(requested)?requested:'template_png';
+  const input={...(req.body||{}),mode};
+  const recipe=createRecipe(input);const job={id:crypto.randomUUID(),status:'queued',mode,input,recipe,createdAt:new Date().toISOString()};
   await writeJob(job);queueMicrotask(()=>executeJob(job));res.status(202).json(job);
 });
 
