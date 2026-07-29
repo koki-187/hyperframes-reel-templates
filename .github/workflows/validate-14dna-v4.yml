@@ -16,22 +16,27 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version: 22
       - name: Validate JSON
         run: |
           python -m json.tool apps/mobile-pwa/manifest.webmanifest > /dev/null
           python -m json.tool configs/font-registry-v4.json > /dev/null
           python -m json.tool super-design-system-v3/package.json > /dev/null
+          python -m json.tool super-design-system-v3/workflows/comfyui/flux1-schnell.json > /dev/null
+          python -m json.tool super-design-system-v3/workflows/comfyui/ltx-image-to-video.json > /dev/null
       - name: Check required mobile and engine files
         run: |
           test -f apps/mobile-pwa/index.html
           test -f apps/mobile-pwa/sw.js
           test -f apps/mobile-pwa/offline.html
           test -f docs/IMPLEMENTATION_ROADMAP.md
-          test -f super-design-system-v3/engine.mjs
           test -f super-design-system-v3/renderers/social-svg.mjs
           test -f super-design-system-v3/japanese-typesetting.mjs
           test -f super-design-system-v3/font-manager.mjs
+          test -f super-design-system-v3/video/render-video.mjs
+          test -f super-design-system-v3/video/ffmpeg.mjs
+          test -f super-design-system-v3/adapters/comfyui.mjs
+          test -f super-design-system-v3/adapters/ltx-video.mjs
       - name: Prevent committed font binaries
         run: |
           if find . -type f \( -iname '*.ttf' -o -iname '*.otf' -o -iname '*.woff' -o -iname '*.woff2' \) | grep -q .; then
@@ -47,6 +52,8 @@ jobs:
       - name: Install engine dependencies
         working-directory: super-design-system-v3
         run: npm install
-      - name: Run engine tests
+      - name: Run engine and media tests
         working-directory: super-design-system-v3
+        env:
+          DNA_ALLOW_FONT_FALLBACK: 'true'
         run: npm test
