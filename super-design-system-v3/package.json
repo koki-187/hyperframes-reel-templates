@@ -1,12 +1,12 @@
 {
   "name": "14dna-engine",
-  "version": "4.3.0",
+  "version": "4.4.0",
   "private": true,
   "type": "module",
   "scripts": {
     "start": "node server.mjs",
     "mcp": "node mcp-server/index.mjs",
-    "test": "node tests/v4-test.mjs && node tests/integration-test.mjs && node tests/media-test.mjs",
+    "test": "node tests/v4-test.mjs && node tests/integration-test.mjs && node tests/media-test.mjs && node tests/asset-qa-test.mjs",
     "icons": "node scripts/generate-pwa-icons.mjs",
     "video:test": "node video/render-video.mjs --test",
     "fonts:check": "node -e \"import('./font-manager.mjs').then(async m=>{const r=await m.inspectFonts('./private-fonts');console.log(JSON.stringify(r,null,2));if(r.status!=='ready')process.exit(1)})\""
@@ -17,6 +17,7 @@
     "@remotion/renderer": "^4.0.0",
     "express": "^5.1.0",
     "ffmpeg-static": "^5.2.0",
+    "jsqr": "^1.4.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "remotion": "^4.0.0",
