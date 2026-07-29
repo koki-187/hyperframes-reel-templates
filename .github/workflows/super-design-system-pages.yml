@@ -1,11 +1,10 @@
-name: Deploy 14DNA-ENGINE Mobile PWA
+name: Deploy 14DNA-ENGINE Public Gate
 
 on:
   push:
     branches: [main]
     paths:
-      - 'apps/mobile-pwa/**'
-      - 'super-design-system-v3/scripts/generate-pwa-icons.mjs'
+      - 'apps/public-gate/**'
       - '.github/workflows/super-design-system-pages.yml'
   workflow_dispatch:
 
@@ -20,7 +19,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  SITE_PATH: apps/mobile-pwa
+  SITE_PATH: apps/public-gate
 
 jobs:
   build:
@@ -29,30 +28,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-
-      - name: Install icon dependency
-        working-directory: super-design-system-v3
-        run: npm install --ignore-scripts
-
-      - name: Generate PWA icons
-        working-directory: super-design-system-v3
-        run: npm run icons
-
-      - name: Validate Pages source
+      - name: Validate public gate
         run: |
           set -euo pipefail
           test -f "$SITE_PATH/index.html"
-          test -f "$SITE_PATH/advanced.html"
-          test -f "$SITE_PATH/manifest.webmanifest"
-          test -f "$SITE_PATH/sw.js"
-          test -f "$SITE_PATH/offline.html"
-          test -f "$SITE_PATH/icons/icon-192.png"
-          test -f "$SITE_PATH/icons/icon-512.png"
-          test -f "$SITE_PATH/icons/maskable-512.png"
+          grep -q 'PRIVATE SYSTEM' "$SITE_PATH/index.html"
+          if grep -RInE '(DNA_RENDER_TOKEN|OPENAI_API_KEY|ANTHROPIC_API_KEY|GEMINI_API_KEY|AIza|sk-|github_pat_|ghp_)' "$SITE_PATH"; then
+            echo 'Sensitive value or secret-shaped text detected in public gate.'
+            exit 1
+          fi
 
       - name: Build Pages artifact
         run: |
@@ -61,8 +45,8 @@ jobs:
           mkdir -p _site
           cp -R "$SITE_PATH"/. _site/
           touch _site/.nojekyll
+          printf 'User-agent: *\nDisallow: /\n' > _site/robots.txt
           printf '%s\n' "${GITHUB_SHA}" > _site/deployed-commit.txt
-          find _site -maxdepth 2 -type f -print | sort
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v4
@@ -80,16 +64,14 @@ jobs:
     steps:
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
-
-      - name: Deploy to GitHub Pages
+      - name: Deploy access-restricted gate
         id: deployment
         uses: actions/deploy-pages@v4
-
       - name: Verify deployment output
         run: |
           set -euo pipefail
           test -n "${{ steps.deployment.outputs.page_url }}"
-          echo "Published: ${{ steps.deployment.outputs.page_url }}"
+          echo "Published gate: ${{ steps.deployment.outputs.page_url }}"
 
   report:
     if: always()
@@ -103,10 +85,10 @@ jobs:
           DEPLOY_RESULT: ${{ needs.deploy.result }}
           PAGE_URL: ${{ needs.deploy.outputs.page_url }}
         run: |
-          set -euo pipefail
           body=$(cat <<EOF
-          ## GitHub Pages 自動監査
+          ## GitHub Pages セキュリティ監査
 
+          - Public content: access-restricted gate only
           - Commit: ${GITHUB_SHA}
           - Build: ${BUILD_RESULT}
           - Deploy: ${DEPLOY_RESULT}
