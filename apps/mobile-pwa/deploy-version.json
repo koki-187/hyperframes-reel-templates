@@ -1,0 +1,8 @@
+{
+  "application": "14DNA-ENGINE",
+  "tagline": "14の美学を、一つのエンジンへ。",
+  "version": "5.0.0",
+  "deployedAt": "2026-07-29T17:58:00+09:00",
+  "sourceCommit": "1a841640502077e096b8ef0ff1ad3b5c01879e92",
+  "environment": "github-pages"
+}
