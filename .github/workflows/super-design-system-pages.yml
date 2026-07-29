@@ -13,6 +13,7 @@ permissions:
   contents: read
   pages: write
   id-token: write
+  issues: write
 
 concurrency:
   group: pages
@@ -74,6 +75,8 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
+    outputs:
+      page_url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Ensure GitHub Pages site exists and uses Actions
         env:
@@ -123,3 +126,28 @@ jobs:
           set -euo pipefail
           test -n "${{ steps.deployment.outputs.page_url }}"
           echo "Published: ${{ steps.deployment.outputs.page_url }}"
+
+  report:
+    if: always()
+    needs: [build, deploy]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Report deployment result to Issue #2
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BUILD_RESULT: ${{ needs.build.result }}
+          DEPLOY_RESULT: ${{ needs.deploy.result }}
+          PAGE_URL: ${{ needs.deploy.outputs.page_url }}
+        run: |
+          set -euo pipefail
+          body=$(cat <<EOF
+          ## GitHub Pages 自動監査
+
+          - Commit: ${GITHUB_SHA}
+          - Build: ${BUILD_RESULT}
+          - Deploy: ${DEPLOY_RESULT}
+          - URL: ${PAGE_URL:-未取得}
+          - Workflow: https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}
+          EOF
+          )
+          gh issue comment 2 --repo "$GITHUB_REPOSITORY" --body "$body"
