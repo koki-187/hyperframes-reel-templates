@@ -16,19 +16,19 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
       - name: Validate JSON
         run: |
           python -m json.tool apps/mobile-pwa/manifest.webmanifest > /dev/null
           python -m json.tool configs/font-registry-v4.json > /dev/null
-          python -m json.tool motion-dna-14.json > /dev/null
-          python -m json.tool color-palettes-14.json > /dev/null
+          python -m json.tool super-design-system-v3/package.json > /dev/null
       - name: Check required mobile and engine files
         run: |
           test -f apps/mobile-pwa/index.html
           test -f apps/mobile-pwa/sw.js
           test -f apps/mobile-pwa/offline.html
           test -f docs/IMPLEMENTATION_ROADMAP.md
+          test -f super-design-system-v3/engine.mjs
           test -f super-design-system-v3/renderers/social-svg.mjs
           test -f super-design-system-v3/japanese-typesetting.mjs
           test -f super-design-system-v3/font-manager.mjs
