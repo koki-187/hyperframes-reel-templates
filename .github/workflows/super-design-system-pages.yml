@@ -27,7 +27,7 @@ jobs:
           node-version: 22
       - name: Install icon dependency
         working-directory: super-design-system-v3
-        run: npm install --ignore-scripts
+        run: npm install
       - name: Generate PWA icons
         working-directory: super-design-system-v3
         run: npm run icons
@@ -38,6 +38,7 @@ jobs:
           cp -r apps/mobile-pwa/* _site/
           touch _site/.nojekyll
           test -f _site/index.html
+          test -f _site/advanced.html
           test -f _site/icons/icon-192.png
           test -f _site/icons/icon-512.png
           test -f _site/icons/maskable-512.png
