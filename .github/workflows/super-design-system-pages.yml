@@ -1,9 +1,10 @@
-name: Deploy MAW Hyperframe control panel
+name: Deploy 14DNA-ENGINE Mobile PWA
 on:
   push:
     branches: [main]
     paths:
-      - 'super-design-system-v3/app/**'
+      - 'apps/mobile-pwa/**'
+      - 'super-design-system-v3/scripts/generate-pwa-icons.mjs'
       - '.github/workflows/super-design-system-pages.yml'
   workflow_dispatch:
 permissions:
@@ -20,12 +21,26 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install icon dependency
+        working-directory: super-design-system-v3
+        run: npm install --ignore-scripts
+      - name: Generate PWA icons
+        working-directory: super-design-system-v3
+        run: npm run icons
       - uses: actions/configure-pages@v5
-      - run: |
+      - name: Build Pages artifact
+        run: |
           mkdir -p _site
-          cp -r super-design-system-v3/app/* _site/
+          cp -r apps/mobile-pwa/* _site/
           touch _site/.nojekyll
+          test -f _site/index.html
+          test -f _site/icons/icon-192.png
+          test -f _site/icons/icon-512.png
+          test -f _site/icons/maskable-512.png
       - uses: actions/upload-pages-artifact@v4
         with:
           path: _site
