@@ -1,34 +1,65 @@
-# MAW HYPERFRAME — SUPER DESIGN SYSTEM v3
+# 14DNA-ENGINE
 
-画像・Reels・Story・X縦／横動画・正方形動画を、14のImage DNA、14のColor DNA、14のMotion DNAで設計するローカル生成ハブです。
+**14の美学を、一つのエンジンへ。**
 
-## 主な機能
+SNS専用の画像・Reels・Story・X縦／横動画・正方形動画を、14 Image DNA・14 Color DNA・14 Motion DNAで設計・生成するスマホファーストの無料ローカル生成基盤です。
+
+## 実装済み
+
+- PWA：iPhone / Android / PC
+- GitHub Pages：`apps/mobile-pwa`を公開
 - 9:16 / 16:9 / 1:1
-- 3〜60秒のDesign Recipe（実際の生成上限は接続モデル依存）
-- 1〜4本のバリエーション設計
-- 14 Motion DNA / 14 Color DNA / Seed固定
-- Storyboard / camera / animation / prompt export
-- GitHub Pages用コントロールパネル
-- Windows/macOSデスクトップワンタッチ起動
-- Claude Code MCP接続
-- OpenAI / Replicate / fal / custom webhookのadapter枠
+- SVG / PNG無料画像生成
+- Remotion無料動画生成
+- FFmpeg H.264 MP4書き出し・検証・音声mux
+- 日本語禁則処理、字幕速度、セーフエリアQA
+- 日本語フォントファイルのchecksum・ライセンス検査・Sharp/Remotion埋込み
+- PWAアイコン 192 / 512 / maskable 512の自動生成
+- Tailscale HTTPSスマホ接続
+- ComfyUI + FLUX.1 schnellローカル接続
+- ComfyUI + LTX-Videoローカル接続
+- Claude Code MCP
+- Bearer Token / CORS / APIキー非公開
+- 有料API自動フォールバックOFF
 
 ## 起動
+
 ```bash
 npm install
+cp .env.example .env
 npm test
 npm start
 ```
-`http://127.0.0.1:4314`
 
-## 重要な制限
-本パッケージ単体は、APIキーなしで外部モデルへ動画をレンダリングしません。Prompt/Storyboard Exportは即時利用可能です。秒数・解像度・本数は接続する動画モデル、契約プラン、クレジットに依存し、不明値は`VERIFY_IN_ACCOUNT`として扱います。
+ローカル：`http://127.0.0.1:4314`
 
-GitHub Pagesは静的サイトです。APIキーをPagesへ置かず、実生成はローカルアプリまたは安全なバックエンドから行ってください。
+スマホ接続は`docs/TAILSCALE_HTTPS.md`を参照してください。
 
-## 名称候補
-1. MAW HYPERFRAME（推奨）
-2. KINETIC ATLAS
-3. SIGNAL/14
-4. VANTA MOTION OS
-5. FRAMEFORGE DNA
+## フォント
+
+正式なPNG・MP4出力では`private-fonts/`にライセンス確認済み日本語フォントとOFL等のライセンス文書を配置します。フォントがない場合、最終書き出しは`FONT_SETUP_REQUIRED`で停止します。フォントバイナリは公開GitHubへコミットしません。
+
+## 無料生成モード
+
+- `prompt_only`
+- `template_svg`
+- `template_png`
+- `template_video`
+- `flux_local`
+- `ltx_video_local`
+
+FLUXとLTXはローカルGPU性能・VRAM・導入モデルに依存します。14DNA-ENGINE自体は課金APIへ自動移行しません。
+
+## 品質検査
+
+CIで以下を実行します。
+
+- JSON / PWA /秘密情報検査
+- フォントバイナリ誤コミット防止
+- 全SNS比率のSVG生成
+- 日本語禁則処理
+- 動画字幕・セーフエリアQA
+- PWAアイコン3サイズ生成
+- Remotionバンドル
+- FFmpegで実MP4生成・再読込
+- ComfyUIワークフロー構文検査
