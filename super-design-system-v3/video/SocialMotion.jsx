@@ -3,12 +3,15 @@ import {AbsoluteFill,interpolate,spring,useCurrentFrame,useVideoConfig} from 're
 
 const SAFE={reels:{top:250,bottom:340,left:80,right:80},story:{top:250,bottom:300,left:72,right:72},x_vertical:{top:120,bottom:180,left:72,right:72},x_landscape:{top:90,bottom:90,left:96,right:96},square:{top:72,bottom:96,left:72,right:72}};
 
-export const SocialMotion=({format='reels',headline,subtitle,dna,accent='#b8ff2c',background='#07090d',fontFamily='Noto Sans JP',seconds=10})=>{
+export const SocialMotion=({format='reels',headline,subtitle,dna,accent='#b8ff2c',background='#07090d',fontFamily='Noto Sans JP',fontDataUri='',seconds=10})=>{
   const frame=useCurrentFrame();const {fps,width,height}=useVideoConfig();const safe=SAFE[format]||SAFE.reels;
   const enter=spring({frame,fps,config:{damping:18,stiffness:120,mass:.8}});
   const y=interpolate(enter,[0,1],[80,0]);const opacity=interpolate(frame,[0,Math.max(8,fps*.45)],[0,1],{extrapolateRight:'clamp'});
   const progress=Math.min(1,frame/Math.max(1,seconds*fps));const vertical=height>width;
-  return React.createElement(AbsoluteFill,{style:{background,color:'#f2f4f6',fontFamily,overflow:'hidden'}},
+  const resolvedFont=fontDataUri?'14DNA Japanese':fontFamily;
+  const fontFace=fontDataUri?`@font-face{font-family:'14DNA Japanese';src:url('${fontDataUri}');font-style:normal;font-weight:400 900;font-display:block}`:'';
+  return React.createElement(AbsoluteFill,{style:{background,color:'#f2f4f6',fontFamily:resolvedFont,overflow:'hidden'}},
+    fontFace?React.createElement('style',null,fontFace):null,
     React.createElement('div',{style:{position:'absolute',left:safe.left,right:safe.right,top:safe.top,bottom:safe.bottom,border:`2px solid ${accent}22`,pointerEvents:'none'}}),
     React.createElement('div',{style:{position:'absolute',left:safe.left,top:safe.top,width:`${Math.max(180,width*.52)}px`,height:Math.max(6,width*.006),background:accent,transform:`scaleX(${Math.max(.02,progress)})`,transformOrigin:'left center'}}),
     React.createElement('div',{style:{position:'absolute',left:safe.left,right:safe.right,top:height*.28,transform:`translateY(${y}px)`,opacity}},
