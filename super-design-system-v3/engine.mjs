@@ -1,11 +1,11 @@
 import crypto from 'node:crypto';
 
 export const FORMATS={
-  reels:{platform:'Instagram Reels',width:1080,height:1920,aspect:'9:16',safe:'top 250 / bottom 340 / sides 80px'},
-  story:{platform:'Instagram/Facebook Story',width:1080,height:1920,aspect:'9:16',safe:'top 250 / bottom 300 / sides 72px'},
-  x_vertical:{platform:'X vertical',width:1080,height:1920,aspect:'9:16',safe:'top 120 / bottom 180 / sides 72px'},
-  x_landscape:{platform:'X landscape',width:1920,height:1080,aspect:'16:9',safe:'top/bottom 90 / sides 96px'},
-  square:{platform:'Square social video',width:1080,height:1080,aspect:'1:1',safe:'top 72 / bottom 96 / sides 72px'}
+  reels:{id:'reels',platform:'Instagram Reels',width:1080,height:1920,aspect:'9:16',safe:'top 250 / bottom 340 / sides 80px'},
+  story:{id:'story',platform:'Instagram/Facebook Story',width:1080,height:1920,aspect:'9:16',safe:'top 250 / bottom 300 / sides 72px'},
+  x_vertical:{id:'x_vertical',platform:'X vertical',width:1080,height:1920,aspect:'9:16',safe:'top 120 / bottom 180 / sides 72px'},
+  x_landscape:{id:'x_landscape',platform:'X landscape',width:1920,height:1080,aspect:'16:9',safe:'top/bottom 90 / sides 96px'},
+  square:{id:'square',platform:'Square social video',width:1080,height:1080,aspect:'1:1',safe:'top 72 / bottom 96 / sides 72px'}
 };
 
 export const MOTION=[
@@ -27,10 +27,10 @@ export const MOTION=[
 
 function random(seed){const h=crypto.createHash('sha256').update(String(seed)).digest();let i=0;return()=>h.readUInt32LE((i++%7)*4)/0xffffffff}
 export function createRecipe(input={}){
-  const seed=input.seed||crypto.randomUUID();const r=random(seed);const format=FORMATS[input.format]||FORMATS.reels;
-  const motion=input.motionId?MOTION.find(x=>x.id===input.motionId):MOTION[Math.floor(r()*MOTION.length)];
-  const seconds=Math.min(60,Math.max(3,Number(input.seconds||10)));const outputs=Math.min(4,Math.max(1,Number(input.outputs||1)));const shots=seconds<=6?3:seconds<=15?5:8;
-  const storyboard=Array.from({length:shots},(_,i)=>({shot:i+1,start:+(i*seconds/shots).toFixed(2),end:+((i+1)*seconds/shots).toFixed(2),role:i===0?'HOOK':i===shots-1?'CTA':'DEVELOP'}));
-  const productionPrompt=`Create an original ${format.aspect} ${seconds}-second social video at ${format.width}x${format.height}, 30fps. Theme: ${input.theme||'brand message'}. Headline: ${input.headline||'none'}. Motion principle: ${motion.principle}. Timing: ${motion.timing}. Camera: ${motion.camera}. Animation language: ${motion.moves.join(', ')}. Keep essential text inside ${format.safe}. Preserve official brand assets. Do not name or imitate any designer, studio, film, campaign, character or copyrighted work. Do not fabricate metrics, endorsements or client logos.`;
-  return{version:'3.0.0',seed,outputs,seconds,fps:Number(input.fps||30),format,motion,storyboard,productionPrompt,limitNotice:'Actual render duration, resolution and batch count depend on the connected model and account. Display unknown limits as VERIFY_IN_ACCOUNT.'};
+ const seed=input.seed||crypto.randomUUID(),r=random(seed),formatId=FORMATS[input.format]?input.format:'reels',format=FORMATS[formatId];
+ const selected=input.motionId?MOTION.find(x=>x.id===input.motionId):null;const motion=selected||MOTION[Math.floor(r()*MOTION.length)];
+ const seconds=Math.min(60,Math.max(3,Number(input.seconds||10))),outputs=Math.min(4,Math.max(1,Number(input.outputs||1))),shots=seconds<=6?3:seconds<=15?5:8;
+ const storyboard=Array.from({length:shots},(_,i)=>({shot:i+1,start:+(i*seconds/shots).toFixed(2),end:+((i+1)*seconds/shots).toFixed(2),role:i===0?'HOOK':i===shots-1?'CTA':'DEVELOP'}));
+ const productionPrompt=`Create an original ${format.aspect} ${seconds}-second social video at ${format.width}x${format.height}, 30fps. Theme: ${input.theme||'brand message'}. Headline: ${input.headline||'none'}. Motion principle: ${motion.principle}. Timing: ${motion.timing}. Camera: ${motion.camera}. Animation language: ${motion.moves.join(', ')}. Keep essential text inside ${format.safe}. Preserve official brand assets. Do not name or imitate any designer, studio, film, campaign, character or copyrighted work. Do not fabricate metrics, endorsements or client logos.`;
+ return{version:'4.3.0',seed,outputs,seconds,fps:Number(input.fps||30),formatId,format,motion,storyboard,productionPrompt,limitNotice:'Actual local render limits depend on GPU/VRAM. Paid API fallback is disabled.'};
 }
