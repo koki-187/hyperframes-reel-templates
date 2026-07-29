@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#07090d">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="./manifest.webmanifest">
+<title>14DNA-ENGINE</title>
+<style>
+:root{--bg:#07090d;--panel:#11151c;--line:#29313d;--text:#f2f4f6;--muted:#9ba4af;--accent:#b8ff2c;--bottom:env(safe-area-inset-bottom)}
+*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Hiragino Sans","Yu Gothic",sans-serif}body{min-height:100dvh;padding-bottom:calc(76px + var(--bottom))}
+header{position:sticky;top:0;z-index:10;padding:calc(18px + env(safe-area-inset-top)) 18px 16px;background:#07090de8;border-bottom:1px solid var(--line);backdrop-filter:blur(16px)}
+.brand{font-size:22px;font-weight:900;letter-spacing:-.04em}.tag{font-size:12px;color:var(--muted)}main{width:min(100% - 28px,720px);margin:auto;padding:18px 0 30px}
+h1{font-size:clamp(38px,11vw,62px);line-height:.94;letter-spacing:-.06em;margin:18px 0 12px}.lead{color:var(--muted);line-height:1.65}
+.quick{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:20px 0}.quick button,.card,input,textarea,select{border:1px solid var(--line);background:var(--panel);color:var(--text);border-radius:15px}.quick button{min-height:76px;text-align:left;padding:14px;font-size:15px;font-weight:800}
+.card{padding:16px;margin:16px 0}label{display:block;font-size:12px;color:var(--muted);margin:14px 0 7px}input,textarea,select{width:100%;min-height:50px;padding:13px 14px;font-size:16px}textarea{min-height:108px;resize:vertical}
+.dna-strip{display:flex;gap:10px;overflow:auto;scroll-snap-type:x mandatory;padding-bottom:8px}.dna{min-width:78%;scroll-snap-align:center}.dna strong{display:block;font-size:19px;margin-bottom:8px}.primary{width:100%;min-height:54px;border:0;border-radius:14px;background:var(--accent);color:#071000;font-size:16px;font-weight:900;margin-top:16px}.secondary{width:100%;min-height:50px;border:1px solid var(--line);border-radius:14px;background:transparent;color:var(--text);font-weight:700}
+.status{display:flex;align-items:center;justify-content:space-between}.pill{font-size:11px;color:var(--accent);background:#b8ff2c1c;border-radius:999px;padding:5px 9px}nav{position:fixed;left:0;right:0;bottom:0;z-index:20;height:calc(68px + var(--bottom));padding-bottom:var(--bottom);display:grid;grid-template-columns:repeat(5,1fr);background:#0a0d12ef;border-top:1px solid var(--line);backdrop-filter:blur(18px)}nav button{border:0;background:transparent;color:var(--muted);font-size:11px;min-width:48px}nav button.active{color:var(--accent)}
+#install{display:none}.notice{font-size:12px;line-height:1.6;color:var(--muted)}@media(min-width:700px){.quick{grid-template-columns:repeat(4,1fr)}}
+</style>
+</head>
+<body>
+<header><div class="brand">14DNA-ENGINE</div><div class="tag">14の美学を、一つのエンジンへ。</div></header>
+<main>
+<h1>SNS制作を<br>スマホで完結。</h1>
+<p class="lead">企画、14DNA選択、コピー編集、生成依頼、比較、保存、共有まで。高解像度画像と動画だけ無料のローカルRender Nodeへ送ります。</p>
+<button id="install" class="secondary">ホーム画面へ追加</button>
+<div class="quick">
+<button data-format="x">X<br><span class="tag">画像・縦・横動画</span></button>
+<button data-format="reels">Reels<br><span class="tag">1080×1920</span></button>
+<button data-format="story">Story<br><span class="tag">1080×1920</span></button>
+<button data-format="square">正方形<br><span class="tag">1080×1080</span></button>
+</div>
+<section class="card">
+<div class="status"><strong>新規作成</strong><span class="pill">自動保存</span></div>
+<label for="theme">テーマ</label><textarea id="theme" placeholder="例：AIで不動産調査の時間を短縮"></textarea>
+<label for="headline">見出し</label><input id="headline" placeholder="SNS画像に表示する見出し">
+<label for="format">形式</label><select id="format"><option value="image">画像</option><option value="video">動画</option><option value="carousel">カルーセル</option></select>
+<label>14DNA</label>
+<div class="dna-strip">
+<div class="card dna" data-dna="digital-nature"><strong>04 DIGITAL NATURE</strong><span class="tag">AI・分析・不動産テック</span></div>
+<div class="card dna" data-dna="swiss-grid"><strong>08 SWISS GRID</strong><span class="tag">統計・比較・B2B</span></div>
+<div class="card dna" data-dna="typographic-energy"><strong>10 TYPOGRAPHIC ENERGY</strong><span class="tag">主張・Q&A・問題提起</span></div>
+</div>
+<label for="media">写真・動画素材</label><input id="media" type="file" accept="image/*,video/*" multiple>
+<button id="preview" class="primary">プレビューを作成</button>
+<p id="message" class="notice">最終書き出しではRender Nodeに設定した正式な日本語フォントを使用します。</p>
+</section>
+</main>
+<nav><button class="active">作成</button><button>DNA</button><button>履歴</button><button>状況</button><button>設定</button></nav>
+<script>
+const stateKey="14dna-draft-v4";let installPrompt=null;
+const fields=["theme","headline","format"];
+function save(){const state=Object.fromEntries(fields.map(id=>[id,document.getElementById(id).value]));localStorage.setItem(stateKey,JSON.stringify(state))}
+function restore(){try{const state=JSON.parse(localStorage.getItem(stateKey)||"{}");fields.forEach(id=>{if(state[id])document.getElementById(id).value=state[id]})}catch{}}
+fields.forEach(id=>document.getElementById(id).addEventListener("input",save));restore();
+document.querySelectorAll("[data-format]").forEach(button=>button.addEventListener("click",()=>{document.getElementById("format").value=button.dataset.format==="reels"||button.dataset.format==="story"?"video":"image";save()}));
+document.getElementById("preview").addEventListener("click",()=>{document.getElementById("message").textContent="Design Recipeを作成しました。Render Node接続後はここから生成ジョブを送信します。"});
+window.addEventListener("beforeinstallprompt",event=>{event.preventDefault();installPrompt=event;document.getElementById("install").style.display="block"});
+document.getElementById("install").addEventListener("click",async()=>{if(!installPrompt)return;await installPrompt.prompt();installPrompt=null});
+if("serviceWorker" in navigator)navigator.serviceWorker.register("./sw.js");
+</script>
+</body></html>
