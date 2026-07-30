@@ -34,6 +34,7 @@ jobs:
           test -f apps/mobile-pwa/offline.html
           grep -q '/api/jobs/.*/quality' apps/mobile-pwa/review.html
           grep -q 'RELEASE 88' apps/mobile-pwa/review.html
+          grep -q 'Quality Review' apps/mobile-pwa/advanced.html
           test -f docs/IMPLEMENTATION_ROADMAP.md
           test -f super-design-system-v3/renderers/social-svg.mjs
           test -f super-design-system-v3/renderers/social-png.mjs
@@ -49,6 +50,7 @@ jobs:
           test -f super-design-system-v3/tests/asset-qa-test.mjs
           test -f super-design-system-v3/tests/quality-gate-test.mjs
           test -f super-design-system-v3/docs/QUALITY_STANDARD.md
+          test -f super-design-system-v3/docs/QUALITY_REVIEW_WORKFLOW.md
           test -f super-design-system-v3/desktop/START_14DNA_TAILSCALE.command
           test -f super-design-system-v3/desktop/START_14DNA_TAILSCALE.ps1
       - name: Prevent committed font binaries
