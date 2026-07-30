@@ -29,8 +29,11 @@ jobs:
         run: |
           test -f apps/mobile-pwa/index.html
           test -f apps/mobile-pwa/advanced.html
+          test -f apps/mobile-pwa/review.html
           test -f apps/mobile-pwa/sw.js
           test -f apps/mobile-pwa/offline.html
+          grep -q '/api/jobs/.*/quality' apps/mobile-pwa/review.html
+          grep -q 'RELEASE 88' apps/mobile-pwa/review.html
           test -f docs/IMPLEMENTATION_ROADMAP.md
           test -f super-design-system-v3/renderers/social-svg.mjs
           test -f super-design-system-v3/renderers/social-png.mjs
