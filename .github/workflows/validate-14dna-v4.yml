@@ -47,8 +47,11 @@ jobs:
           test -f super-design-system-v3/adapters/ltx-video.mjs
           test -f super-design-system-v3/quality/asset-qa.mjs
           test -f super-design-system-v3/quality/quality-gate.mjs
+          test -f super-design-system-v3/quality/reference-profile.mjs
+          test -f super-design-system-v3/quality/regeneration.mjs
           test -f super-design-system-v3/tests/asset-qa-test.mjs
           test -f super-design-system-v3/tests/quality-gate-test.mjs
+          test -f super-design-system-v3/tests/operational-flow-test.mjs
           test -f super-design-system-v3/docs/QUALITY_STANDARD.md
           test -f super-design-system-v3/docs/QUALITY_REVIEW_WORKFLOW.md
           test -f super-design-system-v3/desktop/START_14DNA_TAILSCALE.command
