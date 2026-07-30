@@ -1,5 +1,5 @@
-const CACHE = "14dna-mobile-v4.3";
-const CORE = ["./", "./index.html", "./advanced.html", "./manifest.webmanifest", "./offline.html"];
+const CACHE = "14dna-mobile-v4.4";
+const CORE = ["./", "./index.html", "./advanced.html", "./review.html", "./manifest.webmanifest", "./offline.html"];
 
 self.addEventListener("install", event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(CORE)));
