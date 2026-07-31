@@ -12,7 +12,9 @@ import {validateMp4} from './video/ffmpeg.mjs';
 import {queueComfyWorkflow} from './adapters/comfyui.mjs';
 import {generateLtxVideo} from './adapters/ltx-video.mjs';
 import {evaluateQualityGate,createVariationPlan} from './quality/quality-gate.mjs';
-import {writeQaReport} from './quality/asset-qa.mjs';
+import {validateAsset,writeQaReport} from './quality/asset-qa.mjs';
+import {createReferenceProfile,compareReferenceProfile} from './quality/reference-profile.mjs';
+import {createRegenerationRecipe} from './quality/regeneration.mjs';
 
 const __dirname=path.dirname(fileURLToPath(import.meta.url));
 const repoRoot=path.resolve(__dirname,'..');
@@ -44,7 +46,6 @@ const app=express();
 app.disable('x-powered-by');
 app.set('trust proxy','loopback');
 app.use(express.json({limit:process.env.DNA_JSON_LIMIT||'2mb',strict:true}));
-
 app.use((req,res,next)=>{
  res.setHeader('x-content-type-options','nosniff');
  res.setHeader('x-frame-options','DENY');
@@ -106,15 +107,41 @@ function secureApi(req,res,next){return rateLimit(req,res,()=>requireToken(req,r
 async function writeJob(job){await fs.writeFile(path.join(jobsDir,`${job.id}.json`),JSON.stringify(job,null,2),{mode:0o600})}
 async function readJob(id){if(!/^[0-9a-f-]{36}$/i.test(id))throw new Error('INVALID_JOB_ID');return JSON.parse(await fs.readFile(path.join(jobsDir,`${id}.json`),'utf8'))}
 function assertOwner(job,req){if(job.deviceId&&job.deviceId!==req.deviceId){const e=new Error('JOB_FORBIDDEN');e.status=403;throw e}}
-function fileResult(name,type){return{name,type,url:`/api/outputs/${name}`}}
+function fileResult(name,type){return{name,type,url:`/api/outputs/${name}`,previewUrl:`/api/previews/${name}`}}
 function candidateFileNames(job){return (job.candidateResult?.files||[]).map(file=>file.name).filter(Boolean)}
 async function removeCandidateFiles(job){for(const name of candidateFileNames(job))await fs.rm(path.join(outputDir,path.basename(name)),{force:true})}
 function sanitizedJob(job){
  const copy=structuredClone(job);
  if(copy.status!=='completed'&&copy.candidateResult?.files){
-  copy.candidateResult.files=copy.candidateResult.files.map(({name,type})=>({name,type,restricted:true}));
+  copy.candidateResult.files=copy.candidateResult.files.map(({name,type,previewUrl})=>({name,type,previewUrl:previewUrl||`/api/previews/${name}`,restricted:true}));
  }
  return copy;
+}
+function defaultAssetManifest(job){
+ return {
+  expectedWidth:job.recipe?.format?.width,
+  expectedHeight:job.recipe?.format?.height,
+  boxes:job.input?.assetManifest?.boxes||[],
+  texts:job.input?.assetManifest?.texts||[
+   {id:'headline',value:job.input?.headline,required:Boolean(job.input?.headline),maxChars:80},
+   {id:'subtitle',value:job.input?.subtitle,required:false,maxChars:120}
+  ],
+  safeArea:job.input?.assetManifest?.safeArea
+ };
+}
+async function automaticImageQa(job,filePath){
+ return validateAsset({
+  file:filePath,
+  expectedQrUrl:job.input?.expectedQrUrl||null,
+  manifest:defaultAssetManifest(job),
+  threshold:82
+ });
+}
+function resolveReference(assessment={}){
+ if(!assessment.referenceProfile)return assessment.reference||{};
+ const profile=createReferenceProfile(assessment.referenceProfile);
+ const comparison=compareReferenceProfile(profile,assessment.candidateSignals||assessment.premiumSignals||{});
+ return {...comparison,profileId:profile.id};
 }
 
 async function applyQualityAssessment(job,assessment){
@@ -126,22 +153,23 @@ async function applyQualityAssessment(job,assessment){
   candidateId:job.id,
   scores:assessment.scores||{},
   technicalReport,
-  reference:assessment.reference||{},
+  reference:resolveReference(assessment),
   premiumSignals:assessment.premiumSignals||{},
   minimumLevel:assessment.minimumLevel||'RELEASE',
   provenance:assessment.provenance||job.provenance||{}
  });
  job.qualityGate=gate;
  const reportPath=path.join(reportsDir,`${job.id}.quality.json`);
- await writeQaReport(reportPath,{jobId:job.id,gate,assessedAt:new Date().toISOString()});
+ await writeQaReport(reportPath,{jobId:job.id,gate,automaticQa:job.candidateResult?.qa||null,assessedAt:new Date().toISOString()});
  job.qualityReport={name:path.basename(reportPath)};
  if(gate.shouldOutput){
   job.result={...job.candidateResult,qualityGate:gate};
   job.status='completed';
   job.completedAt=new Date().toISOString();
  }else{
+  job.regenerationRecipe=createRegenerationRecipe({job,gate});
   await removeCandidateFiles(job);
-  job.result={files:[],qualityGate:gate};
+  job.result={files:[],qualityGate:gate,regenerationRecipe:job.regenerationRecipe};
   job.status='rejected';
   job.rejectedAt=new Date().toISOString();
  }
@@ -155,15 +183,29 @@ async function executeJob(job){
   let candidateResult;
   if(job.mode==='prompt_only')candidateResult={recipe:job.recipe};
   else if(job.mode==='template_svg'){
-   const font=await loadJapaneseFont(fontDir,{required:false});const svg=renderSocialSvg(job.recipe,job.input,font||{}),svgFile=`${job.id}.svg`;await fs.writeFile(path.join(outputDir,svgFile),svg,{mode:0o600});candidateResult={files:[fileResult(svgFile,'image/svg+xml')],font:font?{name:font.name,sha256:font.sha256}:null};
+   const font=await loadJapaneseFont(fontDir,{required:false});
+   const svg=renderSocialSvg(job.recipe,job.input,font||{}),svgFile=`${job.id}.svg`;
+   await fs.writeFile(path.join(outputDir,svgFile),svg,{mode:0o600});
+   candidateResult={files:[fileResult(svgFile,'image/svg+xml')],font:font?{name:font.name,sha256:font.sha256}:null,qa:{ok:true,score:100,failures:[],warnings:[]}};
   }else if(job.mode==='template_png'){
-   const font=await loadJapaneseFont(fontDir,{required:process.env.DNA_ALLOW_FONT_FALLBACK!=='true'});const pngFile=`${job.id}.png`;
-   if(!font&&process.env.DNA_ALLOW_FONT_FALLBACK==='true'){const svg=renderSocialSvg(job.recipe,job.input,{});const sharp=(await import('sharp')).default;await sharp(Buffer.from(svg)).png().toFile(path.join(outputDir,pngFile));candidateResult={files:[fileResult(pngFile,'image/png')],font:null,warning:'FONT_FALLBACK_USED'}}
-   else{const rendered=await renderSocialPng({recipe:job.recipe,input:job.input,font,output:path.join(outputDir,pngFile)});candidateResult={files:[fileResult(pngFile,'image/png')],font:rendered.font,layout:rendered.layout}}
+   const font=await loadJapaneseFont(fontDir,{required:process.env.DNA_ALLOW_FONT_FALLBACK!=='true'});const pngFile=`${job.id}.png`;const pngPath=path.join(outputDir,pngFile);
+   if(!font&&process.env.DNA_ALLOW_FONT_FALLBACK==='true'){
+    const svg=renderSocialSvg(job.recipe,job.input,{});const sharp=(await import('sharp')).default;await sharp(Buffer.from(svg)).png().toFile(pngPath);
+    candidateResult={files:[fileResult(pngFile,'image/png')],font:null,warning:'FONT_FALLBACK_USED'};
+   }else{
+    const rendered=await renderSocialPng({recipe:job.recipe,input:job.input,font,output:pngPath});
+    candidateResult={files:[fileResult(pngFile,'image/png')],font:rendered.font,layout:rendered.layout};
+   }
+   candidateResult.qa=await automaticImageQa(job,pngPath);
   }else if(job.mode==='template_video'){
-   const font=await loadJapaneseFont(fontDir,{required:process.env.DNA_ALLOW_FONT_FALLBACK!=='true'});const file=`${job.id}.mp4`;const rendered=await renderVideo({...job.input,format:job.input.format||'reels',dna:job.recipe.motion?.id,output:path.join(outputDir,file),fontFamily:font?.name||'Noto Sans JP',fontDataUri:font?.dataUri||''});await validateMp4(path.join(outputDir,file));candidateResult={files:[fileResult(file,'video/mp4')],qa:rendered.qa,font:font?{name:font.name,sha256:font.sha256}:null};
+   const font=await loadJapaneseFont(fontDir,{required:process.env.DNA_ALLOW_FONT_FALLBACK!=='true'});const file=`${job.id}.mp4`;
+   const rendered=await renderVideo({...job.input,format:job.input.format||'reels',dna:job.recipe.motion?.id,output:path.join(outputDir,file),fontFamily:font?.name||'Noto Sans JP',fontDataUri:font?.dataUri||''});
+   await validateMp4(path.join(outputDir,file));
+   candidateResult={files:[fileResult(file,'video/mp4')],qa:rendered.qa,font:font?{name:font.name,sha256:font.sha256}:null};
   }else if(job.mode==='flux_local'){
-   const workflowPath=path.join(__dirname,'workflows/comfyui/flux1-schnell.json');const queued=await queueComfyWorkflow({workflowPath,variables:{prompt:job.recipe.productionPrompt,width:job.recipe.format.width,height:job.recipe.format.height,seed:job.input.seed||1,unet_name:process.env.FLUX_UNET||'flux1-schnell.safetensors',clip_l:process.env.FLUX_CLIP_L||'clip_l.safetensors',t5xxl:process.env.FLUX_T5||'t5xxl_fp16.safetensors',vae_name:process.env.FLUX_VAE||'ae.safetensors'}});candidateResult={provider:'comfyui-flux',queued,limits:{cost:'local_free',hardwareDependent:true}};
+   const workflowPath=path.join(__dirname,'workflows/comfyui/flux1-schnell.json');
+   const queued=await queueComfyWorkflow({workflowPath,variables:{prompt:job.recipe.productionPrompt,width:job.recipe.format.width,height:job.recipe.format.height,seed:job.input.seed||1,unet_name:process.env.FLUX_UNET||'flux1-schnell.safetensors',clip_l:process.env.FLUX_CLIP_L||'clip_l.safetensors',t5xxl:process.env.FLUX_T5||'t5xxl_fp16.safetensors',vae_name:process.env.FLUX_VAE||'ae.safetensors'}});
+   candidateResult={provider:'comfyui-flux',queued,limits:{cost:'local_free',hardwareDependent:true},qa:{ok:true,score:82,failures:[],warnings:['EXTERNAL_RESULT_PENDING']}};
   }else if(job.mode==='ltx_video_local')candidateResult=await generateLtxVideo({prompt:job.recipe.productionPrompt,imagePath:job.input.imagePath,width:job.input.width||768,height:job.input.height||1280,frames:job.input.frames||121,fps:job.input.fps||24,seed:job.input.seed||1,models:{ltx_model:process.env.LTX_MODEL||'ltx-video.safetensors'}});
   else throw new Error('ADAPTER_NOT_CONFIGURED');
 
@@ -172,7 +214,11 @@ async function executeJob(job){
   if(!VISUAL_MODES.has(job.mode)||!requirePremiumGate){job.result=candidateResult;job.status='completed';job.completedAt=new Date().toISOString()}
   else if(job.input.qualityAssessment)await applyQualityAssessment(job,job.input.qualityAssessment);
   else{job.result={files:[],reviewRequired:true};job.status='review_required';job.reviewRequiredAt=new Date().toISOString()}
- }catch(error){if(job.status!=='cancelled'){job.status='failed';job.error=process.env.NODE_ENV==='production'?'GENERATION_FAILED':String(error?.message||error);job.completedAt=new Date().toISOString()}}
+ }catch(error){
+  if(job.status!=='cancelled'){
+   job.status='failed';job.error=process.env.NODE_ENV==='production'?'GENERATION_FAILED':String(error?.message||error);job.completedAt=new Date().toISOString();
+  }
+ }
  await writeJob(job);
 }
 
@@ -195,15 +241,52 @@ app.get('/api/catalog',secureApi,(_,res)=>res.json({motion:MOTION,formats:FORMAT
 app.get('/api/fonts',secureApi,async(_,res)=>res.json(await inspectFonts(fontDir)));
 app.post('/api/recipe',secureApi,(req,res)=>{try{res.json(createRecipe(req.body||{}))}catch{res.status(400).json({error:'RECIPE_INVALID'})}});
 app.post('/api/variations',secureApi,(req,res)=>{try{res.json(createVariationPlan(req.body||{}))}catch{res.status(400).json({error:'VARIATION_PLAN_INVALID'})}});
-app.post('/api/jobs',secureApi,async(req,res)=>{try{const input=req.body||{};if(!MODES.includes(input.mode||'prompt_only'))throw new Error('MODE_UNSUPPORTED');const recipe=createRecipe(input);const job={id:crypto.randomUUID(),status:'queued',mode:input.mode||'prompt_only',input,recipe,createdAt:new Date().toISOString(),deviceId:req.deviceId};await writeJob(job);queueMicrotask(()=>executeJob(job));res.status(202).json(sanitizedJob(job))}catch(error){res.status(400).json({error:String(error?.message||'JOB_INVALID')})}});
+app.post('/api/jobs',secureApi,async(req,res)=>{
+ try{
+  const input=req.body||{};if(!MODES.includes(input.mode||'prompt_only'))throw new Error('MODE_UNSUPPORTED');
+  const recipe=createRecipe(input);const job={id:crypto.randomUUID(),status:'queued',mode:input.mode||'prompt_only',input,recipe,createdAt:new Date().toISOString(),deviceId:req.deviceId};
+  await writeJob(job);queueMicrotask(()=>executeJob(job));res.status(202).json(sanitizedJob(job));
+ }catch(error){res.status(400).json({error:String(error?.message||'JOB_INVALID')})}
+});
 app.get('/api/jobs/:id',secureApi,async(req,res)=>{try{const job=await readJob(req.params.id);assertOwner(job,req);res.json(sanitizedJob(job))}catch(error){res.status(error.status||404).json({error:error.message==='JOB_FORBIDDEN'?'JOB_FORBIDDEN':'JOB_NOT_FOUND'})}});
-app.post('/api/jobs/:id/quality',secureApi,async(req,res)=>{try{const job=await readJob(req.params.id);assertOwner(job,req);if(job.status!=='review_required')return res.status(409).json({error:'JOB_NOT_AWAITING_REVIEW'});const assessed=await applyQualityAssessment(job,req.body||{});res.json(sanitizedJob(assessed))}catch(error){res.status(error.status||400).json({error:error.message||'QUALITY_ASSESSMENT_FAILED'})}});
+app.post('/api/jobs/:id/quality',secureApi,async(req,res)=>{
+ try{
+  const job=await readJob(req.params.id);assertOwner(job,req);
+  if(job.status!=='review_required')return res.status(409).json({error:'JOB_NOT_AWAITING_REVIEW'});
+  res.json(sanitizedJob(await applyQualityAssessment(job,req.body||{})));
+ }catch(error){res.status(error.status||400).json({error:error.message||'QUALITY_ASSESSMENT_FAILED'})}
+});
+app.post('/api/jobs/:id/regenerate',secureApi,async(req,res)=>{
+ try{
+  const source=await readJob(req.params.id);assertOwner(source,req);
+  if(source.status!=='rejected')return res.status(409).json({error:'JOB_NOT_REJECTED'});
+  const regenerationRecipe=source.regenerationRecipe||createRegenerationRecipe({job:source,gate:source.qualityGate||{}});
+  const input={...source.input,...(req.body||{}),qualityAssessment:undefined,regenerationRecipe,parentJobId:source.id,seed:crypto.randomUUID()};
+  const job={id:crypto.randomUUID(),status:'queued',mode:input.mode||source.mode,input,recipe:createRecipe(input),createdAt:new Date().toISOString(),deviceId:req.deviceId,parentJobId:source.id,regenerationRecipe};
+  await writeJob(job);queueMicrotask(()=>executeJob(job));res.status(202).json(sanitizedJob(job));
+ }catch(error){res.status(error.status||400).json({error:error.message||'REGENERATION_FAILED'})}
+});
 app.delete('/api/jobs/:id',secureApi,async(req,res)=>{try{const job=await readJob(req.params.id);assertOwner(job,req);if(['completed','failed','rejected'].includes(job.status))return res.status(409).json({error:'JOB_ALREADY_FINISHED'});job.status='cancelled';job.cancelledAt=new Date().toISOString();await removeCandidateFiles(job);await writeJob(job);res.json(sanitizedJob(job))}catch(error){res.status(error.status||404).json({error:error.message==='JOB_FORBIDDEN'?'JOB_FORBIDDEN':'JOB_NOT_FOUND'})}});
-app.get('/api/outputs/:file',secureApi,async(req,res)=>{try{const name=path.basename(req.params.file);const match=name.match(/^([0-9a-f-]{36})\.(svg|png|mp4)$/i);if(!match)throw new Error('OUTPUT_NOT_FOUND');const job=await readJob(match[1]);assertOwner(job,req);if(job.status!=='completed'||!job.qualityGate?.shouldOutput)throw new Error('OUTPUT_NOT_APPROVED');res.setHeader('content-disposition',`attachment; filename="${name}"`);res.setHeader('cache-control','private, no-store, max-age=0');res.sendFile(path.join(outputDir,name))}catch(error){res.status(error.status||403).json({error:error.message==='JOB_FORBIDDEN'?'JOB_FORBIDDEN':'OUTPUT_NOT_APPROVED'})}});
+app.get('/api/previews/:file',secureApi,async(req,res)=>{
+ try{
+  const name=path.basename(req.params.file);const match=name.match(/^([0-9a-f-]{36})\.(svg|png|mp4)$/i);if(!match)throw new Error('PREVIEW_NOT_FOUND');
+  const job=await readJob(match[1]);assertOwner(job,req);
+  if(!['review_required','completed'].includes(job.status))throw new Error('PREVIEW_NOT_AVAILABLE');
+  if(!candidateFileNames(job).includes(name))throw new Error('PREVIEW_NOT_AVAILABLE');
+  res.setHeader('content-disposition',`inline; filename="${name}"`);res.setHeader('cache-control','private, no-store, max-age=0');res.sendFile(path.join(outputDir,name));
+ }catch(error){res.status(error.status||403).json({error:error.message==='JOB_FORBIDDEN'?'JOB_FORBIDDEN':'PREVIEW_NOT_AVAILABLE'})}
+});
+app.get('/api/outputs/:file',secureApi,async(req,res)=>{
+ try{
+  const name=path.basename(req.params.file);const match=name.match(/^([0-9a-f-]{36})\.(svg|png|mp4)$/i);if(!match)throw new Error('OUTPUT_NOT_FOUND');
+  const job=await readJob(match[1]);assertOwner(job,req);if(job.status!=='completed'||!job.qualityGate?.shouldOutput)throw new Error('OUTPUT_NOT_APPROVED');
+  res.setHeader('content-disposition',`attachment; filename="${name}"`);res.setHeader('cache-control','private, no-store, max-age=0');res.sendFile(path.join(outputDir,name));
+ }catch(error){res.status(error.status||403).json({error:error.message==='JOB_FORBIDDEN'?'JOB_FORBIDDEN':'OUTPUT_NOT_APPROVED'})}
+});
 
 app.use((req,res,next)=>{if(req.path.endsWith('.html')||req.path.endsWith('.js')||req.path.endsWith('manifest.webmanifest')||req.path.endsWith('sw.js'))res.setHeader('cache-control','no-store, max-age=0');next()});
 app.use(express.static(mobilePwaDir,{index:'index.html',dotfiles:'deny',fallthrough:true}));
-app.get('*',(_,res)=>res.sendFile(path.join(mobilePwaDir,'index.html')));
+app.use((_,res)=>res.sendFile(path.join(mobilePwaDir,'index.html')));
 
 const port=Number(process.env.PORT||4314);
 const host=process.env.DNA_BIND_HOST||'127.0.0.1';
