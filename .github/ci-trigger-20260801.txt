@@ -1,0 +1,3 @@
+14DNA-ENGINE validation trigger
+Triggered at: 2026-08-01T02:42:00+09:00
+Purpose: run full CI, operational API smoke test, premium quality gate, mobile PWA checks.
