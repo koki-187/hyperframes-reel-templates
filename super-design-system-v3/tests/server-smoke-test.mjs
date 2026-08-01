@@ -3,6 +3,7 @@ import {spawn} from 'node:child_process';
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import http from 'node:http';
 import {fileURLToPath} from 'node:url';
 
 const here=path.dirname(fileURLToPath(import.meta.url));
@@ -13,19 +14,26 @@ const device='ci-device';
 const token='ci-render-token-0123456789abcdef';
 
 function headers(method='GET',payload){
- const h={'content-type':'application/json','authorization':`Bearer ${token}`,'x-device-id':device,'connection':'close'};
- if(payload!==undefined)h['content-length']=String(Buffer.byteLength(payload));
+ const h={'accept':'application/json','authorization':`Bearer ${token}`,'x-device-id':device,'connection':'close'};
+ if(payload!==undefined){h['content-type']='application/json';h['content-length']=String(Buffer.byteLength(payload))}
  if(['POST','PUT','PATCH','DELETE'].includes(method)){
   h['x-request-timestamp']=String(Date.now());
   h['x-request-nonce']=crypto.randomUUID();
  }
  return h;
 }
-async function request(url,{method='GET',body}={}){
+function rawRequest(url,{method='GET',body,requestHeaders}={}){
  const payload=body===undefined?undefined:JSON.stringify(body);
- const response=await fetch(`${base}${url}`,{method,headers:headers(method,payload),body:payload});
- const text=await response.text();let data;try{data=JSON.parse(text)}catch{data=text}
- if(!response.ok)throw new Error(`${method} ${url} ${response.status}: ${text}`);
+ return new Promise((resolve,reject)=>{
+  const req=http.request({hostname:'127.0.0.1',port,path:url,method,headers:{...headers(method,payload),...(requestHeaders||{})}},res=>{
+   const chunks=[];res.on('data',chunk=>chunks.push(chunk));res.on('end',()=>resolve({status:res.statusCode||0,headers:res.headers,body:Buffer.concat(chunks)}));
+  });
+  req.on('error',reject);if(payload!==undefined)req.write(payload,'utf8');req.end();
+ });
+}
+async function request(url,options={}){
+ const response=await rawRequest(url,options);const text=response.body.toString('utf8');let data;try{data=JSON.parse(text)}catch{data=text}
+ if(response.status<200||response.status>=300)throw new Error(`${options.method||'GET'} ${url} ${response.status}: ${text}`);
  return {response,data};
 }
 async function waitFor(id,statuses,timeout=30000){
@@ -48,7 +56,7 @@ const child=spawn(process.execPath,['server.mjs'],{
 let logs='';child.stdout.on('data',d=>logs+=d);child.stderr.on('data',d=>logs+=d);
 try{
  for(let i=0;i<80;i++){
-  try{const r=await fetch(`${base}/api/health`,{headers:{connection:'close'}});if(r.ok)break}catch{}
+  try{const r=await rawRequest('/api/health');if(r.status===200)break}catch{}
   await new Promise(r=>setTimeout(r,100));
   if(i===79)throw new Error(`Server did not start: ${logs}`);
  }
@@ -62,16 +70,16 @@ try{
  assert.equal(review.candidateResult.files[0].restricted,true);
  assert.ok(review.candidateResult.files[0].previewUrl);
 
- const preview=await fetch(`${base}${review.candidateResult.files[0].previewUrl}`,{headers:headers('GET')});
+ const preview=await rawRequest(review.candidateResult.files[0].previewUrl,{requestHeaders:{accept:'image/png'}});
  assert.equal(preview.status,200);
- assert.match(preview.headers.get('content-type')||'',/image\/png/);
+ assert.match(String(preview.headers['content-type']||''),/image\/png/);
 
  const {data:approved}=await request(`/api/jobs/${created.id}/quality`,{method:'POST',body:{minimumLevel:'RELEASE',scores:scores(94),reference:{provided:true,required:true,compositionSimilarity:90,materialSimilarity:90,hierarchySimilarity:92},premiumSignals:{decorativeNoise:5,neonDependence:0,templateFeeling:5,genericIconDensity:5,visualFocusCount:1,negativeSpace:30,controlledAsymmetry:85,materialEvidence:88}}});
  assert.equal(approved.status,'completed',JSON.stringify(approved));
  assert.equal(approved.qualityGate.shouldOutput,true);
- const output=await fetch(`${base}${approved.result.files[0].url}`,{headers:headers('GET')});
+ const output=await rawRequest(approved.result.files[0].url,{requestHeaders:{accept:'image/png'}});
  assert.equal(output.status,200);
- assert.ok((await output.arrayBuffer()).byteLength>1000);
+ assert.ok(output.body.byteLength>1000);
 
  const {data:createdReject}=await request('/api/jobs',{method:'POST',body:{mode:'template_png',format:'square',theme:'拒否テスト',headline:'低品質候補',seed:'SMOKE-REJECT'}});
  await waitFor(createdReject.id,['review_required']);
