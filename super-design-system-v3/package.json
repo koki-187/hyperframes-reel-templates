@@ -1,13 +1,13 @@
 {
   "name": "14dna-engine",
-  "version": "4.7.0",
+  "version": "4.8.0",
   "private": true,
   "type": "module",
   "scripts": {
     "start": "node server.mjs",
     "mcp": "node mcp-server/index.mjs",
-    "test": "node tests/v4-test.mjs && node tests/integration-test.mjs && node tests/media-test.mjs && node tests/asset-qa-test.mjs && node tests/quality-gate-test.mjs && node tests/operational-flow-test.mjs && node tests/server-smoke-test.mjs",
-    "test:operational": "node tests/operational-flow-test.mjs && node tests/server-smoke-test.mjs",
+    "test": "node tests/v4-test.mjs && node tests/integration-test.mjs && node tests/media-test.mjs && node tests/asset-qa-test.mjs && node tests/quality-gate-test.mjs && node tests/operational-flow-test.mjs && node tests/server-smoke-test.mjs && node tests/security-operations-test.mjs",
+    "test:operational": "node tests/operational-flow-test.mjs && node tests/server-smoke-test.mjs && node tests/security-operations-test.mjs",
     "icons": "node scripts/generate-pwa-icons.mjs",
     "video:test": "node video/render-video.mjs --test",
     "fonts:check": "node -e \"import('./font-manager.mjs').then(async m=>{const r=await m.inspectFonts('./private-fonts');console.log(JSON.stringify(r,null,2));if(r.status!=='ready')process.exit(1)})\""
