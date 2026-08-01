@@ -27,7 +27,7 @@ jobs:
           python -m json.tool super-design-system-v3/package.json > /dev/null
           python -m json.tool super-design-system-v3/workflows/comfyui/flux1-schnell.json > /dev/null
           python -m json.tool super-design-system-v3/workflows/comfyui/ltx-image-to-video.json > /dev/null
-      - name: Check required mobile, engine and quality files
+      - name: Check required mobile, engine, security and quality files
         run: |
           test -f apps/mobile-pwa/index.html
           test -f apps/mobile-pwa/advanced.html
@@ -41,6 +41,9 @@ jobs:
           grep -q 'Quality Review' apps/mobile-pwa/advanced.html
           grep -q '/api/previews/' super-design-system-v3/server.mjs
           grep -q 'automaticImageQa' super-design-system-v3/server.mjs
+          grep -q '/api/admin/enrollment-codes' super-design-system-v3/server.mjs
+          grep -q '/api/devices/register' super-design-system-v3/server.mjs
+          grep -q '/api/admin/metrics' super-design-system-v3/server.mjs
           test -f docs/IMPLEMENTATION_ROADMAP.md
           test -f super-design-system-v3/renderers/social-svg.mjs
           test -f super-design-system-v3/renderers/social-png.mjs
@@ -55,10 +58,14 @@ jobs:
           test -f super-design-system-v3/quality/quality-gate.mjs
           test -f super-design-system-v3/quality/reference-profile.mjs
           test -f super-design-system-v3/quality/regeneration.mjs
+          test -f super-design-system-v3/security/device-registry.mjs
+          test -f super-design-system-v3/security/audit-log.mjs
+          test -f super-design-system-v3/operations/metrics-store.mjs
           test -f super-design-system-v3/tests/asset-qa-test.mjs
           test -f super-design-system-v3/tests/quality-gate-test.mjs
           test -f super-design-system-v3/tests/operational-flow-test.mjs
           test -f super-design-system-v3/tests/server-smoke-test.mjs
+          test -f super-design-system-v3/tests/security-operations-test.mjs
           test -f super-design-system-v3/docs/QUALITY_STANDARD.md
           test -f super-design-system-v3/docs/QUALITY_REVIEW_WORKFLOW.md
           test -f super-design-system-v3/desktop/START_14DNA_TAILSCALE.command
@@ -78,7 +85,7 @@ jobs:
       - name: Install engine dependencies
         working-directory: super-design-system-v3
         run: npm install --no-audit --no-fund
-      - name: Run engine, media, quality and authenticated API tests
+      - name: Run engine, media, quality, security and authenticated API tests
         working-directory: super-design-system-v3
         env:
           DNA_ALLOW_FONT_FALLBACK: 'true'
