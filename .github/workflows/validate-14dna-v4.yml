@@ -32,6 +32,7 @@ jobs:
           test -f apps/mobile-pwa/index.html
           test -f apps/mobile-pwa/advanced.html
           test -f apps/mobile-pwa/review.html
+          test -f apps/mobile-pwa/admin.html
           test -f apps/mobile-pwa/sw.js
           test -f apps/mobile-pwa/offline.html
           grep -q '/api/jobs/.*/quality' apps/mobile-pwa/review.html
@@ -39,6 +40,13 @@ jobs:
           grep -q 'previewUrl' apps/mobile-pwa/review.html
           grep -q 'RELEASE 88' apps/mobile-pwa/review.html
           grep -q 'Quality Review' apps/mobile-pwa/advanced.html
+          grep -q '/api/admin/enrollment-codes' apps/mobile-pwa/admin.html
+          grep -q '/api/admin/devices' apps/mobile-pwa/admin.html
+          grep -q '/api/admin/audit' apps/mobile-pwa/admin.html
+          grep -q '/api/admin/metrics' apps/mobile-pwa/admin.html
+          grep -q 'sessionStorage' apps/mobile-pwa/admin.html
+          grep -q './admin.html' apps/mobile-pwa/manifest.webmanifest
+          grep -q './admin.html' apps/mobile-pwa/sw.js
           grep -q '/api/previews/' super-design-system-v3/server.mjs
           grep -q 'automaticImageQa' super-design-system-v3/server.mjs
           grep -q '/api/admin/enrollment-codes' super-design-system-v3/server.mjs
