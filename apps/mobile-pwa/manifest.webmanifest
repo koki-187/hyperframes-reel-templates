@@ -20,7 +20,8 @@
     {"name": "Reelsを作成", "short_name": "Reels", "url": "./?format=reels"},
     {"name": "Storyを作成", "short_name": "Story", "url": "./?format=story"},
     {"name": "動画・ローカルAI", "short_name": "高度生成", "url": "./advanced.html"},
-    {"name": "品質審査", "short_name": "Review", "url": "./review.html"}
+    {"name": "品質審査", "short_name": "Review", "url": "./review.html"},
+    {"name": "運用管理", "short_name": "Admin", "url": "./admin.html"}
   ],
   "share_target": {
     "action": "./?shared=1",
