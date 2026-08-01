@@ -12,8 +12,9 @@ const base=`http://127.0.0.1:${port}`;
 const device='ci-device';
 const token='ci-render-token-0123456789abcdef';
 
-function headers(method='GET'){
- const h={'content-type':'application/json','authorization':`Bearer ${token}`,'x-device-id':device};
+function headers(method='GET',payload){
+ const h={'content-type':'application/json','authorization':`Bearer ${token}`,'x-device-id':device,'connection':'close'};
+ if(payload!==undefined)h['content-length']=String(Buffer.byteLength(payload));
  if(['POST','PUT','PATCH','DELETE'].includes(method)){
   h['x-request-timestamp']=String(Date.now());
   h['x-request-nonce']=crypto.randomUUID();
@@ -21,7 +22,8 @@ function headers(method='GET'){
  return h;
 }
 async function request(url,{method='GET',body}={}){
- const response=await fetch(`${base}${url}`,{method,headers:headers(method),body:body===undefined?undefined:JSON.stringify(body)});
+ const payload=body===undefined?undefined:JSON.stringify(body);
+ const response=await fetch(`${base}${url}`,{method,headers:headers(method,payload),body:payload});
  const text=await response.text();let data;try{data=JSON.parse(text)}catch{data=text}
  if(!response.ok)throw new Error(`${method} ${url} ${response.status}: ${text}`);
  return {response,data};
@@ -46,7 +48,7 @@ const child=spawn(process.execPath,['server.mjs'],{
 let logs='';child.stdout.on('data',d=>logs+=d);child.stderr.on('data',d=>logs+=d);
 try{
  for(let i=0;i<80;i++){
-  try{const r=await fetch(`${base}/api/health`);if(r.ok)break}catch{}
+  try{const r=await fetch(`${base}/api/health`,{headers:{connection:'close'}});if(r.ok)break}catch{}
   await new Promise(r=>setTimeout(r,100));
   if(i===79)throw new Error(`Server did not start: ${logs}`);
  }
