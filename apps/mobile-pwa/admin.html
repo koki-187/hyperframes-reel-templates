@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#07090d">
+<meta name="robots" content="noindex,nofollow,noarchive,nosnippet">
+<title>14DNA Operations Console</title>
+<style>
+:root{--bg:#07090d;--panel:#11151c;--panel2:#0b0f15;--line:#29313d;--text:#f2f4f6;--muted:#9ba4af;--accent:#b8ff2c;--danger:#ff6b6b;--warning:#f6c85f}
+*{box-sizing:border-box}body{margin:0;min-height:100dvh;padding:calc(18px + env(safe-area-inset-top)) 14px calc(28px + env(safe-area-inset-bottom));background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Hiragino Sans","Yu Gothic",sans-serif}main{max-width:1120px;margin:auto}h1{font-size:clamp(38px,8vw,72px);line-height:.92;letter-spacing:-.055em;margin:18px 0 12px}h2{font-size:20px;margin:0}.lead,.muted{color:var(--muted);line-height:1.65}.back{color:var(--accent);text-decoration:none}.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px;margin:14px 0}.grid{display:grid;gap:12px}.two{grid-template-columns:repeat(2,minmax(0,1fr))}.three{grid-template-columns:repeat(3,minmax(0,1fr))}.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:space-between}.toolbar>div{display:flex;gap:8px;flex-wrap:wrap}label{display:block;font-size:12px;color:var(--muted);margin:10px 0 6px}input,select,button,textarea{width:100%;min-height:48px;border-radius:12px;border:1px solid var(--line);background:var(--panel2);color:var(--text);padding:11px;font-size:15px}button{font-weight:850;cursor:pointer}.primary{background:var(--accent);color:#071000;border:0}.secondary{background:transparent}.danger{background:#ff6b6b12;color:var(--danger);border-color:#ff6b6b55}.compact{width:auto;min-width:120px}.status{min-height:22px;white-space:pre-wrap;word-break:break-word}.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px}.metric{border:1px solid var(--line);border-radius:13px;padding:13px;background:var(--panel2)}.metric strong{display:block;font-size:22px;font-variant-numeric:tabular-nums;margin-top:6px}.table-wrap{overflow:auto;border:1px solid var(--line);border-radius:13px}table{width:100%;border-collapse:collapse;min-width:760px}th,td{padding:11px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top;font-size:13px}th{color:var(--muted);font-weight:700;background:#0c1118;position:sticky;top:0}tr:last-child td{border-bottom:0}.pill{display:inline-block;border-radius:999px;padding:5px 8px;font-size:11px;background:#b8ff2c16;color:var(--accent)}.pill.revoked{background:#ff6b6b16;color:var(--danger)}code,pre{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}.codebox{white-space:pre-wrap;word-break:break-all;background:var(--panel2);border:1px solid var(--line);padding:12px;border-radius:12px}.hidden{display:none!important}@media(max-width:700px){.two,.three{grid-template-columns:1fr}.compact{width:100%}.toolbar,.toolbar>div{display:grid;width:100%}table{min-width:680px}}
+</style>
+</head>
+<body><main>
+<a class="back" href="./">← 作成画面へ</a>
+<h1>Operations Console</h1>
+<p class="lead">端末登録・失効、監査ログ、利用メトリクスを管理します。管理者トークンはこのタブを閉じると破棄されます。</p>
+
+<section class="card">
+<h2>接続</h2>
+<div class="grid two">
+<label>Render Node URL<input id="node-url" inputmode="url" autocomplete="off" placeholder="https://workstation.tailnet.ts.net"></label>
+<label>Render Token<input id="render-token" type="password" autocomplete="off"></label>
+<label>Admin Token<input id="admin-token" type="password" autocomplete="off"></label>
+<label>現在の端末ID<input id="device-id" readonly></label>
+</div>
+<div class="toolbar"><div><button id="connect" class="primary compact">接続・更新</button><button id="clear-session" class="secondary compact">セッション破棄</button></div><span id="connection-status" class="muted status"></span></div>
+</section>
+
+<section id="dashboard" class="hidden">
+<section class="card"><div class="toolbar"><h2>利用メトリクス</h2><button id="refresh-metrics" class="secondary compact">更新</button></div><div id="metrics" class="metrics"></div></section>
+
+<section class="card">
+<div class="toolbar"><h2>ワンタイム登録コード</h2></div>
+<div class="grid three"><label>端末ラベル<input id="enroll-label" maxlength="80" placeholder="例：iPhone 15 Pro"></label><label>有効時間（分）<input id="enroll-ttl" type="number" min="1" max="1440" value="15"></label><label>&nbsp;<button id="create-code" class="primary">コードを発行</button></label></div>
+<div id="enrollment-result" class="codebox hidden"></div>
+</section>
+
+<section class="card">
+<div class="toolbar"><h2>登録端末</h2><button id="refresh-devices" class="secondary compact">更新</button></div>
+<div class="table-wrap"><table><thead><tr><th>端末</th><th>状態</th><th>登録日時</th><th>最終利用</th><th>操作</th></tr></thead><tbody id="devices-body"></tbody></table></div>
+</section>
+
+<section class="card">
+<div class="toolbar"><h2>監査ログ</h2><div><select id="audit-event" class="compact"><option value="">全イベント</option><option value="device.enrollment.create">登録コード発行</option><option value="device.register">端末登録</option><option value="device.revoke">端末失効</option><option value="http.request">HTTPリクエスト</option></select><select id="audit-limit" class="compact"><option>50</option><option>100</option><option>200</option></select><button id="refresh-audit" class="secondary compact">更新</button></div></div>
+<div class="table-wrap"><table><thead><tr><th>日時</th><th>イベント</th><th>状態</th><th>端末ハッシュ</th><th>経路</th><th>詳細</th></tr></thead><tbody id="audit-body"></tbody></table></div>
+</section>
+</section>
+</main>
+<script>
+const $=id=>document.getElementById(id);const sessionKey='14dna-admin-session-v1';
+function deviceId(){let id=localStorage.getItem('14dna-device-id');if(!id){id=crypto.randomUUID();localStorage.setItem('14dna-device-id',id)}return id}
+function loadSettings(){const normal=JSON.parse(localStorage.getItem('14dna-settings-v5')||'{}');const session=JSON.parse(sessionStorage.getItem(sessionKey)||'{}');$('node-url').value=session.url||normal.url||location.origin;$('render-token').value=session.renderToken||sessionStorage.getItem('14dna-session-token')||'';$('admin-token').value=session.adminToken||'';$('device-id').value=deviceId()}
+function saveSession(){const value={url:$('node-url').value.trim().replace(/\/$/,''),renderToken:$('render-token').value,adminToken:$('admin-token').value};sessionStorage.setItem(sessionKey,JSON.stringify(value));return value}
+function connection(){const s=JSON.parse(sessionStorage.getItem(sessionKey)||'{}');if(!s.url||!s.renderToken||!s.adminToken)throw new Error('URL、Render Token、Admin Tokenを入力してください');return s}
+function headers(method='GET'){const s=connection(),h={'content-type':'application/json','authorization':`Bearer ${s.renderToken}`,'x-admin-token':s.adminToken,'x-device-id':deviceId()};if(['POST','PUT','PATCH','DELETE'].includes(method)){h['x-request-timestamp']=String(Date.now());h['x-request-nonce']=crypto.randomUUID()}return h}
+async function request(path,{method='GET',body}={}){const s=connection();const response=await fetch(`${s.url}${path}`,{method,body:body===undefined?undefined:JSON.stringify(body),headers:headers(method),cache:'no-store',credentials:'omit',referrerPolicy:'no-referrer'});const text=await response.text();let data;try{data=JSON.parse(text)}catch{data={raw:text}}if(!response.ok)throw new Error(data.error||`HTTP ${response.status}`);return data}
+function text(value){return value===null||value===undefined||value===''?'—':String(value)}
+function date(value){if(!value)return '—';const d=new Date(value);return Number.isNaN(d.getTime())?String(value):d.toLocaleString('ja-JP')}
+function metricEntries(data){const output=[];const walk=(obj,prefix='')=>{for(const [key,value] of Object.entries(obj||{})){const name=prefix?`${prefix}.${key}`:key;if(value&&typeof value==='object'&&!Array.isArray(value))walk(value,name);else output.push([name,value])}};walk(data);return output}
+function renderMetrics(data){const root=$('metrics');root.innerHTML='';for(const [name,value] of metricEntries(data)){const item=document.createElement('div');item.className='metric';const label=document.createElement('span'),strong=document.createElement('strong');label.className='muted';label.textContent=name;strong.textContent=typeof value==='number'?value.toLocaleString('ja-JP'):text(value);item.append(label,strong);root.append(item)}if(!root.children.length)root.textContent='メトリクスはまだありません。'}
+function renderDevices(data){const body=$('devices-body');body.innerHTML='';for(const device of data.devices||[]){const tr=document.createElement('tr');const status=device.revokedAt?'revoked':'active';const cells=[`${text(device.label)}\n${text(device.id)}`,status,date(device.createdAt||device.registeredAt),date(device.lastSeenAt),status==='active'?'失効':'—'];cells.forEach((value,index)=>{const td=document.createElement('td');if(index===1){const span=document.createElement('span');span.className=`pill ${status==='revoked'?'revoked':''}`;span.textContent=status;td.append(span)}else if(index===4&&status==='active'){const button=document.createElement('button');button.className='danger compact';button.textContent='失効';button.onclick=()=>revokeDevice(device.id,device.label);td.append(button)}else{td.textContent=value}tr.append(td)});body.append(tr)}if(!body.children.length){const tr=document.createElement('tr'),td=document.createElement('td');td.colSpan=5;td.textContent='登録端末はありません。';tr.append(td);body.append(tr)}}
+function renderAudit(data){const body=$('audit-body');body.innerHTML='';for(const event of data.events||[]){const tr=document.createElement('tr');const values=[date(event.at||event.createdAt),text(event.event),text(event.status),text(event.deviceHash||event.deviceIdHash),`${text(event.method)} ${text(event.route)}`,JSON.stringify(event.details||{})];for(const value of values){const td=document.createElement('td');td.textContent=value;tr.append(td)}body.append(tr)}if(!body.children.length){const tr=document.createElement('tr'),td=document.createElement('td');td.colSpan=6;td.textContent='監査ログはありません。';tr.append(td);body.append(tr)}}
+async function refreshMetrics(){renderMetrics(await request('/api/admin/metrics'))}
+async function refreshDevices(){renderDevices(await request('/api/admin/devices'))}
+async function refreshAudit(){const query=new URLSearchParams({limit:$('audit-limit').value});if($('audit-event').value)query.set('event',$('audit-event').value);renderAudit(await request(`/api/admin/audit?${query}`))}
+async function refreshAll(){await Promise.all([refreshMetrics(),refreshDevices(),refreshAudit()])}
+async function connect(){try{saveSession();$('connection-status').textContent='接続確認中…';await refreshAll();$('dashboard').classList.remove('hidden');$('connection-status').textContent='接続済み'}catch(error){$('dashboard').classList.add('hidden');$('connection-status').textContent=error.message}}
+async function createEnrollment(){try{const result=await request('/api/admin/enrollment-codes',{method:'POST',body:{label:$('enroll-label').value.trim(),ttlMinutes:Number($('enroll-ttl').value)}});$('enrollment-result').classList.remove('hidden');$('enrollment-result').textContent=`登録コード: ${result.code}\n有効期限: ${date(result.expiresAt)}\nID: ${text(result.id)}`;await refreshAudit()}catch(error){$('enrollment-result').classList.remove('hidden');$('enrollment-result').textContent=error.message}}
+async function revokeDevice(id,label){const reason=prompt(`${label||id} を失効します。理由を入力してください。`,'管理者による失効');if(reason===null)return;try{await request(`/api/admin/devices/${encodeURIComponent(id)}`,{method:'DELETE',body:{reason}});await Promise.all([refreshDevices(),refreshAudit(),refreshMetrics()])}catch(error){alert(error.message)}}
+$('connect').onclick=connect;$('refresh-metrics').onclick=()=>refreshMetrics().catch(e=>alert(e.message));$('refresh-devices').onclick=()=>refreshDevices().catch(e=>alert(e.message));$('refresh-audit').onclick=()=>refreshAudit().catch(e=>alert(e.message));$('create-code').onclick=createEnrollment;$('clear-session').onclick=()=>{sessionStorage.removeItem(sessionKey);$('render-token').value='';$('admin-token').value='';$('dashboard').classList.add('hidden');$('connection-status').textContent='セッションを破棄しました'};
+loadSettings();
+</script>
+</body></html>
