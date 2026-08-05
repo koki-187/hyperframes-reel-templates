@@ -1,0 +1,1 @@
+Validate 14DNA-ENGINE v4.11 social delivery presets, batch planning, ALT text, filenames and existing quality/security tests.
